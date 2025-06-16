@@ -1,0 +1,12 @@
+FROM alpine:latest AS builder
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+RUN apk add --no-cache upx
+COPY a2a-debugger /artifacts/a2a-debugger
+RUN upx --best --lzma /artifacts/a2a-debugger
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=builder /artifacts/a2a-debugger /a2a-debugger
+USER nonroot:nonroot
+EXPOSE 8080
+ENTRYPOINT ["/a2a-debugger"]
