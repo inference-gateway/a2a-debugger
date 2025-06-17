@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.3.1...v0.4.0) (2025-06-17)
+
+### ✨ Features
+
+* Add submit task command to A2A CLI and update README with usage examples ([f5ef0de](https://github.com/inference-gateway/a2a-debugger/commit/f5ef0dead022ff2f2d6400925f9a6598c8661ff9))
+
+### ♻️ Improvements
+
+* Update a2a-debugger service to use build context instead of image ([0c3732c](https://github.com/inference-gateway/a2a-debugger/commit/0c3732c650c5af27f417e3a01b72e8daa0cf128a))
+
+### 🐛 Bug Fixes
+
+* Correct build output path and entrypoint in Dockerfile ([bdb6320](https://github.com/inference-gateway/a2a-debugger/commit/bdb63203dce56a7879bffb00f4adc557b299285a))
+* Improve error handling for MethodNotFoundError in A2A client commands ([cc16b6e](https://github.com/inference-gateway/a2a-debugger/commit/cc16b6efcf10716d25189512e7eebc9b82594305))
+
+### 📚 Documentation
+
+* Remove unnecessary config flag from README and update docker-compose entrypoint ([1099c8f](https://github.com/inference-gateway/a2a-debugger/commit/1099c8f678f437e2d179ade7e8c1d5c0668f5c2f))
+
 ## [0.3.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.3.0...v0.3.1) (2025-06-17)
 
 ### ♻️ Improvements
