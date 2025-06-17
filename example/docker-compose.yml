@@ -1,0 +1,27 @@
+services:
+  a2a-server:
+    image: ghcr.io/inference-gateway/google-calendar-agent:latest
+    pull_policy: always
+    environment:
+      APP_DEMO_MODE: 'true'
+    networks:
+      - a2a-network
+
+  a2a-debugger:
+    image: ghcr.io/inference-gateway/a2a-debugger:latest
+    pull_policy: always
+    command:
+      - --config
+      - /config/.a2a.yaml
+      - config
+      - set
+      - server-url
+      - http://a2a-server:8080
+    volumes:
+      - ./config:/config
+    networks:
+      - a2a-network
+
+networks:
+  a2a-network:
+    driver: bridge
