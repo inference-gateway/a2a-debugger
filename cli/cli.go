@@ -93,6 +93,7 @@ func init() {
 	tasksCmd.AddCommand(listTasksCmd)
 	tasksCmd.AddCommand(getTaskCmd)
 	tasksCmd.AddCommand(historyCmd)
+	tasksCmd.AddCommand(submitTaskCmd)
 
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(tasksCmd)
@@ -105,6 +106,7 @@ func init() {
 	listTasksCmd.Flags().Int("limit", 50, "Maximum number of tasks to return")
 	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
 	getTaskCmd.Flags().Int("history-length", 0, "Number of history messages to include")
+	submitTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
 }
 
 func initConfig() {
@@ -560,5 +562,65 @@ var versionCmd = &cobra.Command{
 		fmt.Printf("Version:    %s\n", appVersion)
 		fmt.Printf("Commit:     %s\n", buildCommit)
 		fmt.Printf("Built:      %s\n", buildDate)
+	},
+}
+
+var submitTaskCmd = &cobra.Command{
+	Use:   "submit [message]",
+	Short: "Submit a new task to the A2A server",
+	Long:  "Submits a new task to the A2A server with the specified message.",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		ensureA2AClient()
+
+		message := args[0]
+		contextID, _ := cmd.Flags().GetString("context-id")
+
+		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
+
+		params := adk.MessageSendParams{
+			Message: adk.Message{
+				Kind:      "message",
+				MessageID: messageID,
+				Role:      "user",
+				Parts: []adk.Part{
+					map[string]interface{}{
+						"kind": "text",
+						"text": message,
+					},
+				},
+			},
+		}
+
+		if contextID != "" {
+			params.Message.ContextID = &contextID
+		}
+
+		logger.Debug("Submitting new task", zap.String("message", message), zap.String("context_id", contextID))
+
+		resp, err := a2aClient.SendTask(ctx, params)
+		if err != nil {
+			return handleA2AError(err, "message/send")
+		}
+
+		resultBytes, err := json.Marshal(resp.Result)
+		if err != nil {
+			return fmt.Errorf("failed to marshal response: %w", err)
+		}
+
+		var task adk.Task
+		if err := json.Unmarshal(resultBytes, &task); err != nil {
+			return fmt.Errorf("failed to unmarshal task: %w", err)
+		}
+
+		fmt.Printf("✅ Task submitted successfully!\n\n")
+		fmt.Printf("Task Details:\n")
+		fmt.Printf("  Task ID: %s\n", task.ID)
+		fmt.Printf("  Context ID: %s\n", task.ContextID)
+		fmt.Printf("  Status: %s\n", task.Status.State)
+		fmt.Printf("  Message ID: %s\n", messageID)
+
+		return nil
 	},
 }

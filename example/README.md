@@ -43,6 +43,12 @@ docker compose run --rm a2a-debugger tasks list
 # List tasks with filtering
 docker compose run --rm a2a-debugger tasks list --state working --limit 10
 
+# Submit a new task
+docker compose run --rm a2a-debugger tasks submit "Hello, can you help me?"
+
+# Submit a task with a specific context ID
+docker compose run --rm a2a-debugger tasks submit "Continue our conversation" --context-id ctx-123
+
 # Get detailed information about a specific task
 docker compose run --rm a2a-debugger tasks get <task-id>
 

@@ -3,16 +3,13 @@ services:
     image: ghcr.io/inference-gateway/google-calendar-agent:latest
     pull_policy: always
     environment:
-      APP_DEMO_MODE: 'true'
+      APP_DEMO_MODE: true
     networks:
       - a2a-network
 
   a2a-debugger:
-    # image: ghcr.io/inference-gateway/a2a-debugger:latest
-    # pull_policy: always
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/inference-gateway/a2a-debugger:latest
+    pull_policy: always
     entrypoint:
       - /a2a
       - --config
