@@ -29,7 +29,6 @@ It allows you to connect to A2A servers, list tasks, view conversation histories
 and inspect task statuses.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		initLogger()
-		initA2AClient()
 	},
 }
 
@@ -120,6 +119,13 @@ func initA2AClient() {
 	logger.Info("A2A client initialized", zap.String("server_url", serverURL))
 }
 
+// ensureA2AClient initializes the A2A client if it hasn't been initialized yet
+func ensureA2AClient() {
+	if a2aClient == nil {
+		initA2AClient()
+	}
+}
+
 var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "Test connection to A2A server",
@@ -128,6 +134,7 @@ var connectCmd = &cobra.Command{
 		ctx := context.Background()
 
 		logger.Info("Testing connection to A2A server...")
+		ensureA2AClient()
 
 		agentCard, err := a2aClient.GetAgentCard(ctx)
 		if err != nil {
@@ -162,6 +169,7 @@ var listTasksCmd = &cobra.Command{
 	Long:  "Retrieves and displays a list of tasks from the A2A server with their current statuses.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		ensureA2AClient()
 
 		state, _ := cmd.Flags().GetString("state")
 		contextID, _ := cmd.Flags().GetString("context-id")
@@ -189,7 +197,6 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to list tasks: %w", err)
 		}
 
-		// Parse the response
 		resultBytes, err := json.Marshal(resp.Result)
 		if err != nil {
 			return fmt.Errorf("failed to marshal response: %w", err)
@@ -232,6 +239,8 @@ var getTaskCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		ensureA2AClient()
+
 		taskID := args[0]
 
 		historyLength, _ := cmd.Flags().GetInt("history-length")
@@ -310,6 +319,7 @@ var historyCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		contextID := args[0]
+		ensureA2AClient()
 
 		ctx := context.Background()
 		params := adk.TaskListParams{
@@ -380,6 +390,7 @@ var agentCardCmd = &cobra.Command{
 	Long:  "Retrieves the agent card information from the A2A server.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		ensureA2AClient()
 
 		logger.Info("Getting agent card")
 
