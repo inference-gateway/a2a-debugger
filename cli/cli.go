@@ -146,7 +146,7 @@ func initA2AClient() {
 	config.Logger = logger
 
 	a2aClient = client.NewClientWithConfig(config)
-	logger.Info("A2A client initialized", zap.String("server_url", serverURL))
+	logger.Debug("A2A client initialized", zap.String("server_url", serverURL))
 }
 
 // ensureA2AClient initializes the A2A client if it hasn't been initialized yet
@@ -241,7 +241,7 @@ var connectCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 
-		logger.Info("Testing connection to A2A server...")
+		logger.Debug("Testing connection to A2A server...")
 		ensureA2AClient()
 
 		agentCard, err := a2aClient.GetAgentCard(ctx)
@@ -298,7 +298,7 @@ var listTasksCmd = &cobra.Command{
 			params.ContextID = &contextID
 		}
 
-		logger.Info("Listing tasks", zap.Any("params", params))
+		logger.Debug("Listing tasks", zap.Any("params", params))
 
 		resp, err := a2aClient.ListTasks(ctx, params)
 		if err != nil {
@@ -361,14 +361,13 @@ var getTaskCmd = &cobra.Command{
 			params.HistoryLength = &historyLength
 		}
 
-		logger.Info("Getting task", zap.String("task_id", taskID))
+		logger.Debug("Getting task", zap.String("task_id", taskID))
 
 		resp, err := a2aClient.GetTask(ctx, params)
 		if err != nil {
 			return fmt.Errorf("failed to get task: %w", err)
 		}
 
-		// Parse the response
 		resultBytes, err := json.Marshal(resp.Result)
 		if err != nil {
 			return fmt.Errorf("failed to marshal response: %w", err)
@@ -435,7 +434,7 @@ var historyCmd = &cobra.Command{
 			Limit:     100,
 		}
 
-		logger.Info("Getting conversation history", zap.String("context_id", contextID))
+		logger.Debug("Getting conversation history", zap.String("context_id", contextID))
 
 		resp, err := a2aClient.ListTasks(ctx, params)
 		if err != nil {
@@ -500,7 +499,7 @@ var agentCardCmd = &cobra.Command{
 		ctx := context.Background()
 		ensureA2AClient()
 
-		logger.Info("Getting agent card")
+		logger.Debug("Getting agent card")
 
 		agentCard, err := a2aClient.GetAgentCard(ctx)
 		if err != nil {
