@@ -13,6 +13,14 @@ A powerful command-line utility for debugging, monitoring, and inspecting A2A se
 
 </div>
 
+## ⚠️ Warning
+
+> **This project is in its early stages of development.**
+>
+> Breaking changes are expected as we actively develop and refine the tool. Use with caution in production environments and be prepared for API changes, configuration format updates, and command-line interface modifications between versions.
+>
+> We recommend pinning to specific versions in your scripts and monitoring the [CHANGELOG.md](CHANGELOG.md) for breaking changes.
+
 ## 🚀 Features
 
 - **Server Connectivity**: Test connections to A2A servers and retrieve agent information
