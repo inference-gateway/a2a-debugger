@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.3.0...v0.3.1) (2025-06-17)
+
+### ♻️ Improvements
+
+* Change log level from Info to Debug for A2A client initialization and connection tests ([a15ad42](https://github.com/inference-gateway/a2a-debugger/commit/a15ad42c9aa01a53e3d3fedb7e307df98c79189c))
+
+### 📚 Documentation
+
+* Add example README, configuration file, and docker-compose for A2A Debugger setup ([9b535a7](https://github.com/inference-gateway/a2a-debugger/commit/9b535a7f888ed0b720dd66392a8f43278ba63150))
+* Update example server URL in README to localhost ([f3ce233](https://github.com/inference-gateway/a2a-debugger/commit/f3ce23308d2de9ce16f56d04c41ea3d66a85ee75))
+
+### 🔧 Miscellaneous
+
+* Update TASK_VERSION to v3.44.0 ([813bd4e](https://github.com/inference-gateway/a2a-debugger/commit/813bd4e8c045af6cfa9b515cb0d63f3cc5313738))
+
 ## [0.3.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.2.2...v0.3.0) (2025-06-17)
 
 ### ✨ Features
