@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -48,10 +49,25 @@ func init() {
 	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug logging")
 	rootCmd.PersistentFlags().Bool("insecure", false, "Skip TLS verification")
 
-	viper.BindPFlag("server-url", rootCmd.PersistentFlags().Lookup("server-url"))
-	viper.BindPFlag("timeout", rootCmd.PersistentFlags().Lookup("timeout"))
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
-	viper.BindPFlag("insecure", rootCmd.PersistentFlags().Lookup("insecure"))
+	err := viper.BindPFlag("server-url", rootCmd.PersistentFlags().Lookup("server-url"))
+	if err != nil {
+		log.Fatalf("bind error: %v", err)
+	}
+
+	err = viper.BindPFlag("timeout", rootCmd.PersistentFlags().Lookup("timeout"))
+	if err != nil {
+		log.Fatalf("bind error: %v", err)
+	}
+
+	err = viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	if err != nil {
+		log.Fatalf("bind error: %v", err)
+	}
+
+	err = viper.BindPFlag("insecure", rootCmd.PersistentFlags().Lookup("insecure"))
+	if err != nil {
+		log.Fatalf("bind error: %v", err)
+	}
 
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(listTasksCmd)
