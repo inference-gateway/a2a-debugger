@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.2.0...v0.2.1) (2025-06-17)
+
+### 🐛 Bug Fixes
+
+* Update artifact upload script and improve formatting in workflow ([32f83d8](https://github.com/inference-gateway/a2a-debugger/commit/32f83d8159f96655534f46b312388c238a6308df))
+
+### 🔧 Miscellaneous
+
+* Update .gitattributes to mark generated and vendored files ([7ade7d3](https://github.com/inference-gateway/a2a-debugger/commit/7ade7d3707f4f5716fc39e31a671a0840335e7b9))
+
 ## [0.2.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.1.2...v0.2.0) (2025-06-17)
 
 ### ✨ Features
