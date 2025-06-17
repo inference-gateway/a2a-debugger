@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.2.2...v0.3.0) (2025-06-17)
+
+### ✨ Features
+
+* Add version command and display version information in A2A Debugger ([6146892](https://github.com/inference-gateway/a2a-debugger/commit/614689232c9e8beef22067bb25461104d913521c))
+
 ## [0.2.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.2.1...v0.2.2) (2025-06-17)
 
 ### ♻️ Improvements
