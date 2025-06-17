@@ -28,8 +28,10 @@ A powerful command-line utility for debugging, monitoring, and inspecting A2A se
 - **Task Management**: List, filter, and inspect tasks with detailed status information
 - **Conversation History**: View detailed conversation histories and message flows
 - **Agent Information**: Retrieve and display agent cards with capabilities
+- **Configuration Management**: Set, get, and list configuration values with namespace commands
 - **Flexible Configuration**: Support for configuration files and environment variables
 - **Debug Logging**: Comprehensive logging with configurable verbosity levels
+- **Namespace Commands**: Organized command structure with `config` and `tasks` namespaces
 
 ## 📦 Installation
 
@@ -83,22 +85,55 @@ Test connection to an A2A server:
 a2a connect --server-url http://localhost:8080
 ```
 
+Set server URL in configuration:
+
+```bash
+a2a config set server-url http://localhost:8080
+```
+
 List all tasks:
 
 ```bash
-a2a list-tasks --server-url http://localhost:8080
+a2a tasks list
 ```
 
 Get specific task details:
 
 ```bash
-a2a get-task --server-url http://localhost:8080 --task-id <task-id>
+a2a tasks get <task-id>
 ```
 
 View conversation history:
 
 ```bash
-a2a history --server-url http://localhost:8080 --context-id <context-id>
+a2a tasks history <context-id>
+```
+
+### Command Structure
+
+The A2A Debugger uses a namespace-based command structure for better organization:
+
+#### Config Commands
+
+```bash
+a2a config set <key> <value>    # Set a configuration value
+a2a config get <key>            # Get a configuration value
+a2a config list                 # List all configuration values
+```
+
+#### Task Commands
+
+```bash
+a2a tasks list                  # List available tasks
+a2a tasks get <task-id>         # Get detailed task information
+a2a tasks history <context-id>  # Get conversation history for a context
+```
+
+#### Server Commands
+
+```bash
+a2a connect                     # Test connection to A2A server
+a2a agent-card                  # Get agent card information
 ```
 
 ### Configuration
@@ -122,14 +157,41 @@ insecure: false
 - `--insecure`: Skip TLS verification
 - `--config`: Config file path
 
-#### List Tasks Options
+#### Task List Options
 
-- `--state`: Filter by task state (pending, running, completed, failed)
+- `--state`: Filter by task state (submitted, working, completed, failed)
 - `--context-id`: Filter by context ID
-- `--limit`: Maximum number of tasks to return
-- `--offset`: Number of tasks to skip
+- `--limit`: Maximum number of tasks to return (default: 50)
+- `--offset`: Number of tasks to skip (default: 0)
+
+#### Task Get Options
+
+- `--history-length`: Number of history messages to include
 
 ### Examples
+
+#### Configuration Management
+
+```bash
+# Set server URL in config
+$ a2a config set server-url https://my-agent.example.com
+
+✅ Configuration updated: server-url = https://my-agent.example.com
+
+# Get current server URL
+$ a2a config get server-url
+
+server-url = https://my-agent.example.com
+
+# List all configuration
+$ a2a config list
+
+📋 Configuration:
+
+  server-url = https://my-agent.example.com
+  timeout = 30s
+  debug = false
+```
 
 #### Connect and view agent information
 
@@ -153,19 +215,19 @@ Capabilities:
 #### List tasks with filtering
 
 ```bash
-$ a2a list-tasks --state running --limit 5
+$ a2a tasks list --state working --limit 5
 
 📋 Tasks (Total: 23, Showing: 5)
 
 1. Task ID: task-abc123
    Context ID: ctx-xyz789
-   Status: running
+   Status: working
    Message ID: msg-456
    Role: assistant
 
 2. Task ID: task-def456
    Context ID: ctx-uvw123
-   Status: running
+   Status: working
    Message ID: msg-789
    Role: user
 ```
@@ -173,20 +235,34 @@ $ a2a list-tasks --state running --limit 5
 #### View detailed task information
 
 ```bash
-$ a2a get-task --task-id task-abc123
+$ a2a tasks get task-abc123
 
-📝 Task Details
+� Task Details
 
-Task ID: task-abc123
+ID: task-abc123
 Context ID: ctx-xyz789
 Status: completed
-Created: 2025-06-17T10:30:00Z
-Updated: 2025-06-17T10:35:00Z
 
-Message:
-  ID: msg-456
+Current Message:
+  Message ID: msg-456
   Role: assistant
-  Content: Hello! How can I help you today?
+  Parts: 1
+    1. Kind: text
+       Text: Hello! How can I help you today?
+```
+
+#### View conversation history
+
+```bash
+$ a2a tasks history ctx-xyz789
+
+💬 Conversation History for Context: ctx-xyz789
+
+Task: task-abc123 (Status: completed)
+  1. [user] msg-123
+     1: I need help with my project
+  2. [assistant] msg-456
+     1: Hello! How can I help you today?
 ```
 
 ## 🛠️ Development

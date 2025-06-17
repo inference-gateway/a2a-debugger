@@ -68,11 +68,24 @@ func init() {
 		log.Fatalf("bind error: %v", err)
 	}
 
+	configCmd.AddCommand(configSetCmd)
+	configCmd.AddCommand(configGetCmd)
+	configCmd.AddCommand(configListCmd)
+
+	tasksCmd.AddCommand(listTasksCmd)
+	tasksCmd.AddCommand(getTaskCmd)
+	tasksCmd.AddCommand(historyCmd)
+
+	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(tasksCmd)
 	rootCmd.AddCommand(connectCmd)
-	rootCmd.AddCommand(listTasksCmd)
-	rootCmd.AddCommand(getTaskCmd)
-	rootCmd.AddCommand(historyCmd)
 	rootCmd.AddCommand(agentCardCmd)
+
+	listTasksCmd.Flags().String("state", "", "Filter by task state (submitted, working, completed, failed)")
+	listTasksCmd.Flags().String("context-id", "", "Filter by context ID")
+	listTasksCmd.Flags().Int("limit", 50, "Maximum number of tasks to return")
+	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
+	getTaskCmd.Flags().Int("history-length", 0, "Number of history messages to include")
 }
 
 func initConfig() {
@@ -126,6 +139,84 @@ func ensureA2AClient() {
 	}
 }
 
+// Config namespace command
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Configuration management commands",
+	Long:  "Commands for managing A2A debugger configuration settings.",
+}
+
+var configSetCmd = &cobra.Command{
+	Use:   "set [key] [value]",
+	Short: "Set a configuration value",
+	Long:  "Set a configuration value in the A2A debugger config file.",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		key := args[0]
+		value := args[1]
+
+		viper.Set(key, value)
+
+		err := viper.WriteConfig()
+		if err != nil {
+			err = viper.SafeWriteConfig()
+			if err != nil {
+				return fmt.Errorf("failed to write config: %w", err)
+			}
+		}
+
+		fmt.Printf("✅ Configuration updated: %s = %s\n", key, value)
+		return nil
+	},
+}
+
+var configGetCmd = &cobra.Command{
+	Use:   "get [key]",
+	Short: "Get a configuration value",
+	Long:  "Get a configuration value from the A2A debugger config file.",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		key := args[0]
+		value := viper.Get(key)
+
+		if value == nil {
+			fmt.Printf("Configuration key '%s' not found\n", key)
+			return nil
+		}
+
+		fmt.Printf("%s = %v\n", key, value)
+		return nil
+	},
+}
+
+var configListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all configuration values",
+	Long:  "List all configuration values from the A2A debugger config file.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		settings := viper.AllSettings()
+
+		if len(settings) == 0 {
+			fmt.Printf("No configuration found\n")
+			return nil
+		}
+
+		fmt.Printf("📋 Configuration:\n\n")
+		for key, value := range settings {
+			fmt.Printf("  %s = %v\n", key, value)
+		}
+
+		return nil
+	},
+}
+
+// Tasks namespace command
+var tasksCmd = &cobra.Command{
+	Use:   "tasks",
+	Short: "Task management commands",
+	Long:  "Commands for managing and inspecting A2A tasks.",
+}
+
 var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "Test connection to A2A server",
@@ -164,7 +255,7 @@ var connectCmd = &cobra.Command{
 }
 
 var listTasksCmd = &cobra.Command{
-	Use:   "list-tasks",
+	Use:   "list",
 	Short: "List available tasks and their statuses",
 	Long:  "Retrieves and displays a list of tasks from the A2A server with their current statuses.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -233,7 +324,7 @@ var listTasksCmd = &cobra.Command{
 }
 
 var getTaskCmd = &cobra.Command{
-	Use:   "get-task [task-id]",
+	Use:   "get [task-id]",
 	Short: "Get detailed information about a specific task",
 	Long:  "Retrieves detailed information about a specific task including its history and current status.",
 	Args:  cobra.ExactArgs(1),
@@ -409,12 +500,4 @@ var agentCardCmd = &cobra.Command{
 
 		return nil
 	},
-}
-
-func init() {
-	listTasksCmd.Flags().String("state", "", "Filter by task state (submitted, working, completed, failed)")
-	listTasksCmd.Flags().String("context-id", "", "Filter by context ID")
-	listTasksCmd.Flags().Int("limit", 50, "Maximum number of tasks to return")
-	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
-	getTaskCmd.Flags().Int("history-length", 0, "Number of history messages to include")
 }
