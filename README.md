@@ -32,6 +32,28 @@ A powerful command-line utility for debugging, monitoring, and inspecting A2A se
 
 ## 📦 Installation
 
+### Quick Install (Recommended)
+
+Use our install script to automatically download and install the latest binary:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/inference-gateway/a2a-debugger/main/install.sh | bash
+```
+
+Or download and run the script manually:
+
+```bash
+wget https://raw.githubusercontent.com/inference-gateway/a2a-debugger/main/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+**Install Options:**
+
+- Install specific version: `./install.sh --version v1.0.0`
+- Custom install directory: `INSTALL_DIR=~/bin ./install.sh`
+- Show help: `./install.sh --help`
+
 ### Using Go Install
 
 ```bash
