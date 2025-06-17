@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/go:1-1.24-bookworm
 
-ENV TASK_VERSION=v3.43.3 \
+ENV TASK_VERSION=v3.44.0 \
     GORELEASER_VERSION=v2.9.0 \
     GOLANG_CI_LINT_VERSION=v2.1.6 \
     GITHUB_CLI_VERSION=2.68.1 \
