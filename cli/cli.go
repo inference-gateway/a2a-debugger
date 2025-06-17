@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/inference-gateway/a2a-debugger/a2a"
 	"github.com/inference-gateway/a2a/adk"
 	"github.com/inference-gateway/a2a/adk/client"
 	"github.com/spf13/cobra"
@@ -156,6 +158,37 @@ func ensureA2AClient() {
 	}
 }
 
+// handleA2AError checks if the error is a MethodNotFoundError and returns a user-friendly message
+func handleA2AError(err error, method string) error {
+	if err == nil {
+		return nil
+	}
+
+	errStr := err.Error()
+
+	if strings.Contains(errStr, "MethodNotFoundError") || strings.Contains(errStr, "-32601") {
+		displayMethod := method
+		if displayMethod == "" {
+			displayMethod = "method"
+		}
+
+		return fmt.Errorf("❌ Method '%s' not implemented by the agent", displayMethod)
+	}
+
+	var jsonErr struct {
+		Error *a2a.MethodNotFoundError `json:"error,omitempty"`
+	}
+	if jsonParseErr := json.Unmarshal([]byte(errStr), &jsonErr); jsonParseErr == nil && jsonErr.Error != nil {
+		displayMethod := method
+		if displayMethod == "" {
+			displayMethod = "method"
+		}
+		return fmt.Errorf("❌ Method '%s' not implemented by the agent", displayMethod)
+	}
+
+	return err
+}
+
 // Config namespace command
 var configCmd = &cobra.Command{
 	Use:   "config",
@@ -302,7 +335,7 @@ var listTasksCmd = &cobra.Command{
 
 		resp, err := a2aClient.ListTasks(ctx, params)
 		if err != nil {
-			return fmt.Errorf("failed to list tasks: %w", err)
+			return handleA2AError(err, "tasks/list")
 		}
 
 		resultBytes, err := json.Marshal(resp.Result)
@@ -365,7 +398,7 @@ var getTaskCmd = &cobra.Command{
 
 		resp, err := a2aClient.GetTask(ctx, params)
 		if err != nil {
-			return fmt.Errorf("failed to get task: %w", err)
+			return handleA2AError(err, "tasks/get")
 		}
 
 		resultBytes, err := json.Marshal(resp.Result)
@@ -438,7 +471,7 @@ var historyCmd = &cobra.Command{
 
 		resp, err := a2aClient.ListTasks(ctx, params)
 		if err != nil {
-			return fmt.Errorf("failed to list tasks for context: %w", err)
+			return handleA2AError(err, "tasks/list")
 		}
 
 		resultBytes, err := json.Marshal(resp.Result)
@@ -503,7 +536,7 @@ var agentCardCmd = &cobra.Command{
 
 		agentCard, err := a2aClient.GetAgentCard(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to get agent card: %w", err)
+			return handleA2AError(err, "agent-card")
 		}
 
 		agentCardJSON, err := json.MarshalIndent(agentCard, "", "  ")
