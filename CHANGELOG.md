@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.1.1...v0.1.2) (2025-06-17)
+
+### 🐛 Bug Fixes
+
+* Create LICENSE ([331e306](https://github.com/inference-gateway/a2a-debugger/commit/331e3060956da5008d67392dc24080849639280d))
+
 ## [0.1.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.1.0...v0.1.1) (2025-06-17)
 
 ### 🐛 Bug Fixes
