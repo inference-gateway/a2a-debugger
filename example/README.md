@@ -13,13 +13,13 @@ docker compose up -d
 2. **Test the connection:**
 
 ```bash
-docker compose run --rm a2a-debugger connect --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger connect
 ```
 
 3. **List available tasks:**
 
 ```bash
-docker compose run --rm a2a-debugger tasks list --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger tasks list
 ```
 
 ## 🔧 Available Commands
@@ -28,39 +28,39 @@ docker compose run --rm a2a-debugger tasks list --config /config/.a2a.yaml
 
 ```bash
 # Test connection to the A2A server and display agent information
-docker compose run --rm a2a-debugger connect --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger connect
 
 # Get detailed agent card information in JSON format
-docker compose run --rm a2a-debugger agent-card --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger agent-card
 ```
 
 ### Task Management
 
 ```bash
 # List all tasks
-docker compose run --rm a2a-debugger tasks list --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger tasks list
 
 # List tasks with filtering
-docker compose run --rm a2a-debugger tasks list --state working --limit 10 --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger tasks list --state working --limit 10
 
 # Get detailed information about a specific task
-docker compose run --rm a2a-debugger tasks get <task-id> --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger tasks get <task-id>
 
 # View conversation history for a context
-docker compose run --rm a2a-debugger tasks history <context-id> --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger tasks history <context-id>
 ```
 
 ### Configuration Management
 
 ```bash
 # Set configuration values
-docker compose run --rm a2a-debugger config set server-url http://a2a-server:8080 --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger config set server-url http://a2a-server:8080
 
 # Get configuration values
-docker compose run --rm a2a-debugger config get server-url --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger config get server-url
 
 # List all configuration
-docker compose run --rm a2a-debugger config list --config /config/.a2a.yaml
+docker compose run --rm a2a-debugger config list
 ```
 
 ### Utility Commands
