@@ -174,21 +174,21 @@ insecure: false
 
 ```bash
 # Set server URL in config
-$ a2a config set server-url https://my-agent.example.com
+$ a2a config set server-url http://localhost:8080
 
-✅ Configuration updated: server-url = https://my-agent.example.com
+✅ Configuration updated: server-url = http://localhost:8080
 
 # Get current server URL
 $ a2a config get server-url
 
-server-url = https://my-agent.example.com
+server-url = http://localhost:8080
 
 # List all configuration
 $ a2a config list
 
 📋 Configuration:
 
-  server-url = https://my-agent.example.com
+  server-url = http://localhost:8080
   timeout = 30s
   debug = false
 ```
@@ -196,7 +196,7 @@ $ a2a config list
 #### Connect and view agent information
 
 ```bash
-$ a2a connect --server-url https://my-agent.example.com
+$ a2a connect --server-url http://localhost:8080
 
 ✅ Successfully connected to A2A server!
 
@@ -204,7 +204,7 @@ Agent Information:
   Name: My A2A Agent
   Description: A helpful assistant agent
   Version: 1.0.0
-  URL: https://my-agent.example.com
+  URL: http://localhost:8080
 
 Capabilities:
   Streaming: true
