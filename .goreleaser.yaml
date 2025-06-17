@@ -13,7 +13,7 @@ before:
 
 builds:
   - id: a2a-debugger
-    main: ./cmd/a2a-debugger
+    main: .
     env:
       - CGO_ENABLED=0
     goos:
@@ -24,10 +24,10 @@ builds:
       - arm
       - arm64
     goarm:
-      - "7"
+      - '7'
     goamd64:
-      - "v1"
-    mod_timestamp: "{{ .CommitTimestamp }}"
+      - 'v1'
+    mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
     ldflags:
@@ -37,34 +37,34 @@ dockers:
   - id: a2a-debugger-amd64
     goos: linux
     goarch: amd64
-    goamd64: "v1"
+    goamd64: 'v1'
     use: buildx
     dockerfile: Dockerfile.goreleaser
     image_templates:
-      - "ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-amd64"
+      - 'ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-amd64'
     build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - '--platform=linux/amd64'
+      - '--pull'
+      - '--label=org.opencontainers.image.created={{ .Date }}'
+      - '--label=org.opencontainers.image.title={{ .ProjectName }}'
+      - '--label=org.opencontainers.image.revision={{ .FullCommit }}'
+      - '--label=org.opencontainers.image.version={{ .Version }}'
 
   - id: a2a-debugger-arm64
     goos: linux
     goarch: arm64
-    goarm: "7"
+    goarm: '7'
     use: buildx
     dockerfile: Dockerfile.goreleaser
     image_templates:
-      - "ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-arm64"
+      - 'ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-arm64'
     build_flag_templates:
-      - "--platform=linux/arm64"
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - '--platform=linux/arm64'
+      - '--pull'
+      - '--label=org.opencontainers.image.created={{ .Date }}'
+      - '--label=org.opencontainers.image.title={{ .ProjectName }}'
+      - '--label=org.opencontainers.image.revision={{ .FullCommit }}'
+      - '--label=org.opencontainers.image.version={{ .Version }}'
 
 docker_manifests:
   - name_template: ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}
@@ -72,10 +72,10 @@ docker_manifests:
       - ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-amd64
       - ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-arm64
 
-  - name_template: "{{ if not (contains .Tag `rc`) }}ghcr.io/inference-gateway/a2a-debugger:latest{{ end }}"
+  - name_template: '{{ if not (contains .Tag `rc`) }}ghcr.io/inference-gateway/a2a-debugger:latest{{ end }}'
     image_templates:
-      - "{{ if not (contains .Tag `rc`) }}ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-amd64{{ end }}"
-      - "{{ if not (contains .Tag `rc`) }}ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-arm64{{ end }}"
+      - '{{ if not (contains .Tag `rc`) }}ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-amd64{{ end }}'
+      - '{{ if not (contains .Tag `rc`) }}ghcr.io/inference-gateway/a2a-debugger:{{ .Version }}-arm64{{ end }}'
 
 archives:
   - formats:
@@ -92,7 +92,7 @@ archives:
       - CHANGELOG.md
 
 checksum:
-  name_template: "checksums.txt"
+  name_template: 'checksums.txt'
 
 changelog:
   disable: true
