@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.2.1...v0.2.2) (2025-06-17)
+
+### ♻️ Improvements
+
+* Use namespace based commands - all tasks related actions under tasks and all config related actions under a2a config ([afb3088](https://github.com/inference-gateway/a2a-debugger/commit/afb3088905177fda9fdcd591b42ec3f408e0a0f8))
+
+### 📚 Documentation
+
+* Add MIT license badge to README ([54e188e](https://github.com/inference-gateway/a2a-debugger/commit/54e188ee9c30d96ec7675526538c96e3f919ef65))
+
 ## [0.2.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.2.0...v0.2.1) (2025-06-17)
 
 ### 🐛 Bug Fixes
