@@ -22,7 +22,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "a2a-debugger",
+	Use:   "a2a",
 	Short: "A debugging tool for A2A (Agent-to-Agent) servers",
 	Long: `A2A Debugger is a command-line tool for debugging and monitoring A2A servers.
 It allows you to connect to A2A servers, list tasks, view conversation histories,
@@ -42,7 +42,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.a2a-debugger.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.a2a.yaml)")
 	rootCmd.PersistentFlags().String("server-url", "http://localhost:8080", "A2A server URL")
 	rootCmd.PersistentFlags().Duration("timeout", 30*time.Second, "Request timeout")
 	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug logging")
@@ -84,7 +84,7 @@ func initConfig() {
 
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".a2a-debugger")
+		viper.SetConfigName(".a2a")
 	}
 
 	viper.AutomaticEnv()

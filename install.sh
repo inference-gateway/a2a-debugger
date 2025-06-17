@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # A2A Debugger Installation Script
-# This script downloads and installs the latest release of a2a-debugger
+# This script downloads and installs the latest release of a2a
 
 set -e
 
@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 REPO="inference-gateway/a2a-debugger"
-BINARY_NAME="a2a-debugger"
+BINARY_NAME="a2a"
 
 if [ -n "${INSTALL_DIR:-}" ]; then
     INSTALL_DIR="$INSTALL_DIR"

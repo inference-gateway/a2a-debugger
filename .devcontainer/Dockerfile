@@ -44,9 +44,6 @@ RUN apt-get update && \
 
 USER vscode
 
-RUN go install github.com/maxbrunsfeld/counterfeiter/v6@v6.11.2
-RUN go install go.uber.org/mock/mockgen@v0.5.0
-
 # Use Powerlevel10k theme
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /home/vscode/.powerlevel10k
 RUN echo 'source /home/vscode/.powerlevel10k/powerlevel10k.zsh-theme' >> /home/vscode/.zshrc

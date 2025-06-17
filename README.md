@@ -79,30 +79,30 @@ task build
 Test connection to an A2A server:
 
 ```bash
-a2a-debugger connect --server-url http://localhost:8080
+a2a connect --server-url http://localhost:8080
 ```
 
 List all tasks:
 
 ```bash
-a2a-debugger list-tasks --server-url http://localhost:8080
+a2a list-tasks --server-url http://localhost:8080
 ```
 
 Get specific task details:
 
 ```bash
-a2a-debugger get-task --server-url http://localhost:8080 --task-id <task-id>
+a2a get-task --server-url http://localhost:8080 --task-id <task-id>
 ```
 
 View conversation history:
 
 ```bash
-a2a-debugger history --server-url http://localhost:8080 --context-id <context-id>
+a2a history --server-url http://localhost:8080 --context-id <context-id>
 ```
 
 ### Configuration
 
-Create a configuration file at `~/.a2a-debugger.yaml`:
+Create a configuration file at `~/.a2a.yaml`:
 
 ```yaml
 server-url: http://localhost:8080
@@ -133,7 +133,7 @@ insecure: false
 #### Connect and view agent information
 
 ```bash
-$ a2a-debugger connect --server-url https://my-agent.example.com
+$ a2a connect --server-url https://my-agent.example.com
 
 ✅ Successfully connected to A2A server!
 
@@ -152,7 +152,7 @@ Capabilities:
 #### List tasks with filtering
 
 ```bash
-$ a2a-debugger list-tasks --state running --limit 5
+$ a2a list-tasks --state running --limit 5
 
 📋 Tasks (Total: 23, Showing: 5)
 
@@ -172,7 +172,7 @@ $ a2a-debugger list-tasks --state running --limit 5
 #### View detailed task information
 
 ```bash
-$ a2a-debugger get-task --task-id task-abc123
+$ a2a get-task --task-id task-abc123
 
 📝 Task Details
 

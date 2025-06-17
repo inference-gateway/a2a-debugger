@@ -2,17 +2,14 @@
 ---
 version: 2
 
-project_name: a2a-debugger
+project_name: a2a
 
 before:
   hooks:
-    - go install go.uber.org/mock/mockgen@v0.5.0
-    - go install github.com/maxbrunsfeld/counterfeiter/v6@v6.11.2
     - go mod tidy
-    - go generate ./...
 
 builds:
-  - id: a2a-debugger
+  - id: a2a
     main: .
     env:
       - CGO_ENABLED=0
@@ -34,7 +31,7 @@ builds:
       - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .CommitDate }} -X main.builtBy=goreleaser -X main.treeState={{ .IsGitDirty }}
 
 dockers:
-  - id: a2a-debugger-amd64
+  - id: a2a-amd64
     goos: linux
     goarch: amd64
     goamd64: 'v1'
@@ -50,7 +47,7 @@ dockers:
       - '--label=org.opencontainers.image.revision={{ .FullCommit }}'
       - '--label=org.opencontainers.image.version={{ .Version }}'
 
-  - id: a2a-debugger-arm64
+  - id: a2a-arm64
     goos: linux
     goarch: arm64
     goarm: '7'

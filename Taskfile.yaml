@@ -38,27 +38,27 @@ tasks:
         VERSION=$(git describe --tags --always --dirty)
         COMMIT=$(git rev-parse HEAD)
         DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-        go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" -o dist/a2a-debugger main.go
+        go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" -o dist/a2a main.go
 
   install:
     desc: 'Install the project'
     cmds:
       - echo "Installing the project..."
       - go install .
-      - echo "For shell completion, run 'source <(a2a-debugger completion zsh)'"
+      - echo "For shell completion, run 'source <(a2a completion zsh)'"
 
   uninstall:
     desc: 'Uninstall the project'
     cmds:
       - echo "Uninstalling the project..."
-      - rm -f $(which a2a-debugger)
-      - rm -rf ~/.config/a2a-debugger
+      - rm -f $(which a2a)
+      - rm -rf ~/.config/a2a
 
   build:dev:
     desc: 'Build the project for development (no version information)'
     cmds:
       - echo "Building the project for development..."
-      - go build -o dist/a2a-debugger ./cmd/a2a-debugger
+      - go build -o dist/a2a main.go
 
   build:docker:
     desc: 'Build the Docker image with version information'
