@@ -19,6 +19,10 @@ var (
 	cfgFile   string
 	logger    *zap.Logger
 	a2aClient client.A2AClient
+
+	appVersion  string
+	buildCommit string
+	buildDate   string
 )
 
 var rootCmd = &cobra.Command{
@@ -32,7 +36,19 @@ and inspect task statuses.`,
 	},
 }
 
-func Execute() {
+func Execute(version, commit, date string) {
+	appVersion = version
+	buildCommit = commit
+	buildDate = date
+
+	rootCmd.Version = version
+
+	rootCmd.SetVersionTemplate(`A2A Debugger
+Version:    {{.Version}}
+Commit:     ` + commit + `
+Built:      ` + date + `
+`)
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -80,6 +96,7 @@ func init() {
 	rootCmd.AddCommand(tasksCmd)
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(agentCardCmd)
+	rootCmd.AddCommand(versionCmd)
 
 	listTasksCmd.Flags().String("state", "", "Filter by task state (submitted, working, completed, failed)")
 	listTasksCmd.Flags().String("context-id", "", "Filter by context ID")
@@ -499,5 +516,17 @@ var agentCardCmd = &cobra.Command{
 		fmt.Printf("%s\n", agentCardJSON)
 
 		return nil
+	},
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print version information",
+	Long:  "Display version information including version number, commit hash, and build date.",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("A2A Debugger\n")
+		fmt.Printf("Version:    %s\n", appVersion)
+		fmt.Printf("Commit:     %s\n", buildCommit)
+		fmt.Printf("Built:      %s\n", buildDate)
 	},
 }
