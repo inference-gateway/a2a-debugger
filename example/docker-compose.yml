@@ -4,6 +4,7 @@ services:
     pull_policy: always
     environment:
       APP_DEMO_MODE: true
+      APP_ENVIRONMENT: dev
     networks:
       - a2a-network
 

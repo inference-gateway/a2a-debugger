@@ -22,6 +22,16 @@ docker compose run --rm a2a-debugger connect
 docker compose run --rm a2a-debugger tasks list
 ```
 
+4. **Test streaming capabilities:**
+
+```bash
+# Check if streaming is supported
+docker compose run --rm a2a-debugger connect
+
+# Try a streaming task
+docker compose run --rm a2a-debugger tasks submit-streaming "Hello, can you demonstrate streaming?"
+```
+
 ## 🔧 Available Commands
 
 ### Connection Testing
@@ -56,6 +66,26 @@ docker compose run --rm a2a-debugger tasks get <task-id>
 docker compose run --rm a2a-debugger tasks history <context-id>
 ```
 
+### Streaming Task Management
+
+```bash
+# Submit a streaming task and watch real-time responses
+docker compose run --rm a2a-debugger tasks submit-streaming "Hello, can you help me with a coding task?"
+
+# Submit streaming task with context continuity
+docker compose run --rm a2a-debugger tasks submit-streaming "Start a conversation" --context-id streaming-ctx-123
+docker compose run --rm a2a-debugger tasks submit-streaming "Continue the conversation" --context-id streaming-ctx-123
+
+# Show raw streaming event data for debugging
+docker compose run --rm a2a-debugger tasks submit-streaming "Debug streaming response" --raw
+
+# Test streaming capabilities with complex requests
+docker compose run --rm a2a-debugger tasks submit-streaming "Write a Python function to calculate fibonacci numbers"
+
+# Monitor streaming artifacts and status updates
+docker compose run --rm a2a-debugger tasks submit-streaming "Explain how A2A streaming works" --context-id docs-ctx
+```
+
 ### Configuration Management
 
 ```bash
@@ -85,6 +115,9 @@ docker compose run --rm a2a-debugger tasks --help
 - The a2a-server runs in demo mode (`APP_DEMO_MODE=true`)
 - All services communicate over the `a2a-network` bridge network
 - The debugger is configured to use `http://a2a-server:8080` as the default server URL
+- Use `connect` command first to check if the A2A server supports streaming capabilities
+- Streaming commands provide real-time monitoring of task execution and responses
+- The `--raw` flag is useful for debugging streaming protocol compliance and event structure
 
 ## 🔗 Related Documentation
 

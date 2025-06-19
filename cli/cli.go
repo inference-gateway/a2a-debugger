@@ -94,6 +94,7 @@ func init() {
 	tasksCmd.AddCommand(getTaskCmd)
 	tasksCmd.AddCommand(historyCmd)
 	tasksCmd.AddCommand(submitTaskCmd)
+	tasksCmd.AddCommand(submitStreamingTaskCmd)
 
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(tasksCmd)
@@ -107,6 +108,8 @@ func init() {
 	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
 	getTaskCmd.Flags().Int("history-length", 0, "Number of history messages to include")
 	submitTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
+	submitStreamingTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
+	submitStreamingTaskCmd.Flags().Bool("raw", false, "Show raw streaming event data instead of formatted output")
 }
 
 func initConfig() {
@@ -621,6 +624,153 @@ var submitTaskCmd = &cobra.Command{
 		fmt.Printf("  Status: %s\n", task.Status.State)
 		fmt.Printf("  Message ID: %s\n", messageID)
 
+		return nil
+	},
+}
+
+var submitStreamingTaskCmd = &cobra.Command{
+	Use:   "submit-streaming [message]",
+	Short: "Submit a new streaming task to the A2A server",
+	Long:  "Submits a new streaming task to the A2A server with the specified message and displays streaming responses.",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		ensureA2AClient()
+
+		message := args[0]
+		contextID, _ := cmd.Flags().GetString("context-id")
+		showRaw, _ := cmd.Flags().GetBool("raw")
+
+		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
+
+		params := adk.MessageSendParams{
+			Message: adk.Message{
+				Kind:      "message",
+				MessageID: messageID,
+				Role:      "user",
+				Parts: []adk.Part{
+					map[string]interface{}{
+						"kind": "text",
+						"text": message,
+					},
+				},
+			},
+		}
+
+		if contextID != "" {
+			params.Message.ContextID = &contextID
+		}
+
+		logger.Debug("Submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID))
+
+		eventChan := make(chan interface{}, 100)
+
+		go func() {
+			defer close(eventChan)
+			err := a2aClient.SendTaskStreaming(ctx, params, eventChan)
+			if err != nil {
+				logger.Error("Streaming error", zap.Error(err))
+			}
+		}()
+
+		fmt.Printf("✅ Streaming task submitted successfully!\n\n")
+		if contextID != "" {
+			fmt.Printf("Context ID: %s\n", contextID)
+		}
+		fmt.Printf("Message ID: %s\n", messageID)
+		fmt.Printf("\n🔄 Streaming responses:\n\n")
+
+		for event := range eventChan {
+			if showRaw {
+				eventJSON, err := json.MarshalIndent(event, "", "  ")
+				if err != nil {
+					logger.Error("Failed to marshal event", zap.Error(err))
+					continue
+				}
+				fmt.Printf("📡 Raw Event:\n%s\n\n", eventJSON)
+			} else {
+				eventJSON, err := json.Marshal(event)
+				if err != nil {
+					logger.Error("Failed to marshal event", zap.Error(err))
+					continue
+				}
+
+				var genericEvent map[string]interface{}
+				if err := json.Unmarshal(eventJSON, &genericEvent); err != nil {
+					logger.Error("Failed to unmarshal generic event", zap.Error(err))
+					continue
+				}
+
+				kind, ok := genericEvent["kind"].(string)
+				if !ok {
+					fmt.Printf("🔔 Unknown Event (no kind field)\n")
+					continue
+				}
+
+				switch kind {
+				case "status-update":
+					var statusEvent a2a.TaskStatusUpdateEvent
+					if err := json.Unmarshal(eventJSON, &statusEvent); err != nil {
+						logger.Error("Failed to unmarshal status event", zap.Error(err))
+						continue
+					}
+
+					fmt.Printf("📊 Status Update: %s", statusEvent.Status.State)
+					if statusEvent.Status.Message != nil {
+						fmt.Printf(" (Message: %s)", statusEvent.Status.Message.MessageID)
+					}
+					if statusEvent.Final {
+						fmt.Printf(" [FINAL]")
+					}
+					fmt.Printf("\n")
+
+				case "artifact-update":
+					var artifactEvent a2a.TaskArtifactUpdateEvent
+					if err := json.Unmarshal(eventJSON, &artifactEvent); err != nil {
+						logger.Error("Failed to unmarshal artifact event", zap.Error(err))
+						continue
+					}
+
+					fmt.Printf("📄 Artifact Update:\n")
+					fmt.Printf("  Artifact ID: %s\n", artifactEvent.Artifact.ArtifactID)
+					if artifactEvent.Artifact.Name != nil {
+						fmt.Printf("  Name: %s\n", *artifactEvent.Artifact.Name)
+					}
+					if artifactEvent.Artifact.Description != nil {
+						fmt.Printf("  Description: %s\n", *artifactEvent.Artifact.Description)
+					}
+					if len(artifactEvent.Artifact.Parts) > 0 {
+						fmt.Printf("  Parts:\n")
+						for i, part := range artifactEvent.Artifact.Parts {
+							if partMap, ok := part.(map[string]interface{}); ok {
+								if kind, exists := partMap["kind"]; exists {
+									fmt.Printf("    Part %d: [%v]", i+1, kind)
+									if text, exists := partMap["text"]; exists {
+										fmt.Printf(" %v", text)
+									}
+									fmt.Printf("\n")
+								}
+							}
+						}
+					}
+					if artifactEvent.LastChunk != nil && *artifactEvent.LastChunk {
+						fmt.Printf("  [LAST CHUNK]\n")
+					}
+
+				default:
+					fmt.Printf("🔔 Unknown Event Type: %s\n", kind)
+					if showRaw {
+						eventJSON, err := json.MarshalIndent(event, "", "  ")
+						if err == nil {
+							fmt.Printf("%s\n", eventJSON)
+						}
+					}
+				}
+				fmt.Printf("\n")
+			}
+		}
+
+		fmt.Printf("✅ Streaming completed!\n")
 		return nil
 	},
 }
