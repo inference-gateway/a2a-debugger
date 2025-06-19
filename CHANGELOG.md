@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.4.0...v0.5.0) (2025-06-19)
+
+### ✨ Features
+
+* Add submit-streaming command to A2A CLI and update README with usage examples ([62e4614](https://github.com/inference-gateway/a2a-debugger/commit/62e461493e16f36e3a698cc9ecdaffc800d14825))
+
+### 🔧 Miscellaneous
+
+* Update README.md ([4700b7d](https://github.com/inference-gateway/a2a-debugger/commit/4700b7d12e03a81df5bc597eb23aefaa023b172a))
+
 ## [0.4.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.3.1...v0.4.0) (2025-06-17)
 
 ### ✨ Features
