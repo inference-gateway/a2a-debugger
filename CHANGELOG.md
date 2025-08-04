@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.5.0...v0.5.1) (2025-08-04)
+
+### 🐛 Bug Fixes
+
+* Display all message part types including tool calls ([#3](https://github.com/inference-gateway/a2a-debugger/issues/3)) ([54dc546](https://github.com/inference-gateway/a2a-debugger/commit/54dc546591846d51a09029671c26ffaeccf1d519)), closes [#2](https://github.com/inference-gateway/a2a-debugger/issues/2)
+
+### 👷 CI
+
+* Add Claude Code GitHub Workflow ([#1](https://github.com/inference-gateway/a2a-debugger/issues/1)) ([741230b](https://github.com/inference-gateway/a2a-debugger/commit/741230bd228efd486b1fc62dcabf5bb804dcc881))
+
+### 📚 Documentation
+
+* Add CLAUDE.md for project documentation and development guidelines ([caa0e90](https://github.com/inference-gateway/a2a-debugger/commit/caa0e90242ce3e784386ac3904770d7cb275bd60))
+
+### 🔧 Miscellaneous
+
+* Add issue templates for bug reports, feature requests, and refactor requests ([ae732b9](https://github.com/inference-gateway/a2a-debugger/commit/ae732b9a31aeca8dbaeab4c4187418ae7b2d6ad1))
+
+### 🔨 Miscellaneous
+
+* Install Claude code in Dockerfile ([13a2bbc](https://github.com/inference-gateway/a2a-debugger/commit/13a2bbc4c50695af878da018f950010ac275b8dd))
+
 ## [0.5.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.4.0...v0.5.0) (2025-06-19)
 
 ### ✨ Features
