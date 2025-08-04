@@ -194,6 +194,79 @@ func handleA2AError(err error, method string) error {
 	return err
 }
 
+// displayPart displays a message part with proper formatting based on its type
+func displayPart(part interface{}, partIndex int, prefix string) {
+	if partMap, ok := part.(map[string]interface{}); ok {
+		kind, kindExists := partMap["kind"]
+		if !kindExists {
+			fmt.Printf("%s%d. Unknown part (no kind field)\n", prefix, partIndex)
+			return
+		}
+
+		switch kind {
+		case "text":
+			if text, exists := partMap["text"]; exists {
+				fmt.Printf("%s%d. [Text] %v\n", prefix, partIndex, text)
+			} else {
+				fmt.Printf("%s%d. [Text] (no text content)\n", prefix, partIndex)
+			}
+
+		case "data":
+			fmt.Printf("%s%d. [Data] ", prefix, partIndex)
+			if data, exists := partMap["data"]; exists {
+				// Pretty print the data content
+				if dataJSON, err := json.MarshalIndent(data, "", "  "); err == nil {
+					fmt.Printf("\n%s    %s\n", prefix, strings.ReplaceAll(string(dataJSON), "\n", "\n"+prefix+"    "))
+				} else {
+					fmt.Printf("%v\n", data)
+				}
+			} else {
+				fmt.Printf("(no data content)\n")
+			}
+
+		case "file":
+			fmt.Printf("%s%d. [File] ", prefix, partIndex)
+			if file, exists := partMap["file"]; exists {
+				if fileMap, ok := file.(map[string]interface{}); ok {
+					if name, exists := fileMap["name"]; exists {
+						fmt.Printf("Name: %v", name)
+					}
+					if mimeType, exists := fileMap["mimeType"]; exists {
+						fmt.Printf(" Type: %v", mimeType)
+					}
+					if uri, exists := fileMap["uri"]; exists {
+						fmt.Printf(" URI: %v", uri)
+					} else if bytes, exists := fileMap["bytes"]; exists {
+						if bytesStr, ok := bytes.(string); ok {
+							fmt.Printf(" Size: %d bytes", len(bytesStr))
+						}
+					}
+				}
+				fmt.Printf("\n")
+			} else {
+				fmt.Printf("(no file content)\n")
+			}
+
+		default:
+			fmt.Printf("%s%d. [%v] ", prefix, partIndex, kind)
+			// Try to display any content we can find
+			if text, exists := partMap["text"]; exists {
+				fmt.Printf("Text: %v\n", text)
+			} else if data, exists := partMap["data"]; exists {
+				if dataJSON, err := json.MarshalIndent(data, "", "  "); err == nil {
+					fmt.Printf("Data:\n%s    %s\n", prefix, strings.ReplaceAll(string(dataJSON), "\n", "\n"+prefix+"    "))
+				} else {
+					fmt.Printf("Data: %v\n", data)
+				}
+			} else {
+				fmt.Printf("(unknown content)\n")
+			}
+		}
+	} else {
+		fmt.Printf("%s%d. Invalid part format\n", prefix, partIndex)
+	}
+}
+
 // Config namespace command
 var configCmd = &cobra.Command{
 	Use:   "config",
@@ -428,14 +501,7 @@ var getTaskCmd = &cobra.Command{
 			fmt.Printf("  Parts: %d\n", len(task.Status.Message.Parts))
 
 			for i, part := range task.Status.Message.Parts {
-				if partMap, ok := part.(map[string]interface{}); ok {
-					if kind, exists := partMap["kind"]; exists {
-						fmt.Printf("    %d. Kind: %v\n", i+1, kind)
-						if text, exists := partMap["text"]; exists {
-							fmt.Printf("       Text: %v\n", text)
-						}
-					}
-				}
+				displayPart(part, i+1, "    ")
 			}
 		}
 
@@ -444,11 +510,7 @@ var getTaskCmd = &cobra.Command{
 			for i, msg := range task.History {
 				fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.MessageID)
 				for j, part := range msg.Parts {
-					if partMap, ok := part.(map[string]interface{}); ok {
-						if text, exists := partMap["text"]; exists {
-							fmt.Printf("     Part %d: %v\n", j+1, text)
-						}
-					}
+					displayPart(part, j+1, "     ")
 				}
 			}
 		}
@@ -503,11 +565,7 @@ var historyCmd = &cobra.Command{
 				for i, msg := range task.History {
 					fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.MessageID)
 					for j, part := range msg.Parts {
-						if partMap, ok := part.(map[string]interface{}); ok {
-							if text, exists := partMap["text"]; exists {
-								fmt.Printf("     %d: %v\n", j+1, text)
-							}
-						}
+						displayPart(part, j+1, "     ")
 					}
 				}
 			}
@@ -515,11 +573,7 @@ var historyCmd = &cobra.Command{
 			if task.Status.Message != nil {
 				fmt.Printf("  Current: [%s] %s\n", task.Status.Message.Role, task.Status.Message.MessageID)
 				for j, part := range task.Status.Message.Parts {
-					if partMap, ok := part.(map[string]interface{}); ok {
-						if text, exists := partMap["text"]; exists {
-							fmt.Printf("     %d: %v\n", j+1, text)
-						}
-					}
+					displayPart(part, j+1, "     ")
 				}
 			}
 			fmt.Printf("\n")
