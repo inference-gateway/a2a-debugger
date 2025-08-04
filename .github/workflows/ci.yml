@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - "main"
+      - 'main'
   pull_request:
     branches:
-      - "main"
+      - 'main'
 
 jobs:
   build:
@@ -17,12 +17,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5.5.0
         with:
-          go-version: "1.24"
+          go-version: '1.24'
           cache: true
 
       - name: Install Task
         run: |
-          curl -s https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin v3.43.3
+          curl -s https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin v3.44.1
 
       - name: Install golangci-lint
         run: |
