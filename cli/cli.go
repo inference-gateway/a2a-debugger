@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inference-gateway/a2a-debugger/a2a"
-	"github.com/inference-gateway/a2a/adk"
-	"github.com/inference-gateway/a2a/adk/client"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
+	a2a "github.com/inference-gateway/a2a-debugger/a2a"
+	client "github.com/inference-gateway/adk/client"
+	adk "github.com/inference-gateway/adk/types"
+	cobra "github.com/spf13/cobra"
+	viper "github.com/spf13/viper"
+	zap "go.uber.org/zap"
 )
 
 var (
