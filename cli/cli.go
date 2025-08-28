@@ -778,6 +778,20 @@ var submitStreamingTaskCmd = &cobra.Command{
 					}
 					fmt.Printf("\n")
 
+					if statusEvent.Status.Message != nil && len(statusEvent.Status.Message.Parts) > 0 {
+						fmt.Printf("\n💬 Agent Response:\n")
+						for _, part := range statusEvent.Status.Message.Parts {
+							if partMap, ok := part.(map[string]interface{}); ok {
+								if kind, ok := partMap["kind"].(string); ok && kind == "text" {
+									if text, ok := partMap["text"].(string); ok {
+										fmt.Printf("%s\n", text)
+									}
+								}
+							}
+						}
+						fmt.Printf("\n")
+					}
+
 				case "artifact-update":
 					var artifactEvent a2a.TaskArtifactUpdateEvent
 					if err := json.Unmarshal(eventJSON, &artifactEvent); err != nil {
