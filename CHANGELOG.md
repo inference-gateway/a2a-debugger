@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.5.1...v0.5.2) (2025-08-28)
+
+### ♻️ Improvements
+
+* Improve agent response display with message parts when streaming tasks ([41dfd28](https://github.com/inference-gateway/a2a-debugger/commit/41dfd2804198f9ac0d15284bb83f2a9005523905))
+
+### 🐛 Bug Fixes
+
+* Correct environment variable names in docker-compose.yml ([f9721a1](https://github.com/inference-gateway/a2a-debugger/commit/f9721a19af57ad356bee9316f3e6534ccd346b4e))
+
+### 🔧 Miscellaneous
+
+* Add initial configuration files for flox environment setup ([edede96](https://github.com/inference-gateway/a2a-debugger/commit/edede9677c48580f81dd4cb51f8cb7c4985c087b))
+
 ## [0.5.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.5.0...v0.5.1) (2025-08-04)
 
 ### 🐛 Bug Fixes
