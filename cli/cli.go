@@ -735,7 +735,6 @@ var submitStreamingTaskCmd = &cobra.Command{
 		fmt.Printf("Message ID: %s\n", messageID)
 		fmt.Printf("\n🔄 Streaming responses:\n\n")
 
-		// Track streaming summary information
 		var streamingSummary struct {
 			TaskID            string
 			ContextID         string
@@ -749,7 +748,6 @@ var submitStreamingTaskCmd = &cobra.Command{
 		for event := range eventChan {
 			streamingSummary.TotalEvents++
 
-			// Track summary information regardless of display mode
 			eventJSON, err := json.Marshal(event)
 			if err != nil {
 				logger.Error("Failed to marshal event", zap.Error(err))
@@ -777,8 +775,6 @@ var submitStreamingTaskCmd = &cobra.Command{
 						}
 						streamingSummary.FinalStatus = string(statusEvent.Status.State)
 						if statusEvent.Status.Message != nil {
-							// Convert a2a.Message to adk.Message for compatibility
-							// Convert a2a.Part to adk.Part
 							adkParts := make([]adk.Part, len(statusEvent.Status.Message.Parts))
 							for i, part := range statusEvent.Status.Message.Parts {
 								adkParts[i] = adk.Part(part)
@@ -816,7 +812,6 @@ var submitStreamingTaskCmd = &cobra.Command{
 				}
 				fmt.Printf("📡 Raw Event:\n%s\n\n", eventJSONFormatted)
 			} else {
-				// Display formatted events (since we already parsed for summary above)
 				if !ok {
 					fmt.Printf("🔔 Unknown Event (no kind field)\n")
 					continue
@@ -895,7 +890,6 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 		duration := time.Since(startTime)
 
-		// Display streaming summary
 		fmt.Printf("✅ Streaming completed!\n\n")
 		fmt.Printf("📋 Streaming Summary:\n")
 		fmt.Printf("  Task ID: %s\n", streamingSummary.TaskID)
@@ -906,7 +900,6 @@ var submitStreamingTaskCmd = &cobra.Command{
 		fmt.Printf("    Status Updates: %d\n", streamingSummary.StatusUpdates)
 		fmt.Printf("    Artifact Updates: %d\n", streamingSummary.ArtifactUpdates)
 
-		// Show message part count if available
 		if streamingSummary.FinalMessage != nil {
 			fmt.Printf("  Final Message Parts: %d\n", len(streamingSummary.FinalMessage.Parts))
 		}

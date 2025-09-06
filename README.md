@@ -26,7 +26,7 @@ A powerful command-line utility for debugging, monitoring, and inspecting A2A se
 - **Server Connectivity**: Test connections to A2A servers and retrieve agent information
 - **Task Management**: List, filter, and inspect tasks with detailed status information
 - **Real-time Streaming**: Submit streaming tasks and monitor real-time agent responses
-- **Streaming Summaries**: Comprehensive summaries with Task IDs, durations, and event counts
+- **Streaming Summaries**: Summaries with Task IDs, durations, and event counts
 - **Conversation History**: View detailed conversation histories and message flows
 - **Agent Information**: Retrieve and display agent cards with capabilities
 - **Configuration Management**: Set, get, and list configuration values with namespace commands
