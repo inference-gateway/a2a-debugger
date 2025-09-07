@@ -696,6 +696,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 		showRaw, _ := cmd.Flags().GetBool("raw")
 
 		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
+		startTime := time.Now()
 
 		params := adk.MessageSendParams{
 			Message: adk.Message{
@@ -734,28 +735,83 @@ var submitStreamingTaskCmd = &cobra.Command{
 		fmt.Printf("Message ID: %s\n", messageID)
 		fmt.Printf("\n🔄 Streaming responses:\n\n")
 
+		var streamingSummary struct {
+			TaskID            string
+			ContextID         string
+			FinalStatus       string
+			StatusUpdates     int
+			ArtifactUpdates   int
+			TotalEvents       int
+			FinalMessage      *adk.Message
+		}
+
 		for event := range eventChan {
+			streamingSummary.TotalEvents++
+
+			eventJSON, err := json.Marshal(event)
+			if err != nil {
+				logger.Error("Failed to marshal event", zap.Error(err))
+				continue
+			}
+
+			var genericEvent map[string]interface{}
+			if err := json.Unmarshal(eventJSON, &genericEvent); err != nil {
+				logger.Error("Failed to unmarshal generic event", zap.Error(err))
+				continue
+			}
+
+			kind, ok := genericEvent["kind"].(string)
+			if ok {
+				switch kind {
+				case "status-update":
+					streamingSummary.StatusUpdates++
+					var statusEvent a2a.TaskStatusUpdateEvent
+					if err := json.Unmarshal(eventJSON, &statusEvent); err == nil {
+						if streamingSummary.TaskID == "" {
+							streamingSummary.TaskID = statusEvent.TaskID
+						}
+						if streamingSummary.ContextID == "" {
+							streamingSummary.ContextID = statusEvent.ContextID
+						}
+						streamingSummary.FinalStatus = string(statusEvent.Status.State)
+						if statusEvent.Status.Message != nil {
+							adkParts := make([]adk.Part, len(statusEvent.Status.Message.Parts))
+							for i, part := range statusEvent.Status.Message.Parts {
+								adkParts[i] = adk.Part(part)
+							}
+							
+							adkMessage := &adk.Message{
+								Kind:      statusEvent.Status.Message.Kind,
+								MessageID: statusEvent.Status.Message.MessageID,
+								Role:      statusEvent.Status.Message.Role,
+								Parts:     adkParts,
+								ContextID: statusEvent.Status.Message.ContextID,
+							}
+							streamingSummary.FinalMessage = adkMessage
+						}
+					}
+				case "artifact-update":
+					streamingSummary.ArtifactUpdates++
+					var artifactEvent a2a.TaskArtifactUpdateEvent
+					if err := json.Unmarshal(eventJSON, &artifactEvent); err == nil {
+						if streamingSummary.TaskID == "" {
+							streamingSummary.TaskID = artifactEvent.TaskID
+						}
+						if streamingSummary.ContextID == "" {
+							streamingSummary.ContextID = artifactEvent.ContextID
+						}
+					}
+				}
+			}
+
 			if showRaw {
-				eventJSON, err := json.MarshalIndent(event, "", "  ")
+				eventJSONFormatted, err := json.MarshalIndent(event, "", "  ")
 				if err != nil {
 					logger.Error("Failed to marshal event", zap.Error(err))
 					continue
 				}
-				fmt.Printf("📡 Raw Event:\n%s\n\n", eventJSON)
+				fmt.Printf("📡 Raw Event:\n%s\n\n", eventJSONFormatted)
 			} else {
-				eventJSON, err := json.Marshal(event)
-				if err != nil {
-					logger.Error("Failed to marshal event", zap.Error(err))
-					continue
-				}
-
-				var genericEvent map[string]interface{}
-				if err := json.Unmarshal(eventJSON, &genericEvent); err != nil {
-					logger.Error("Failed to unmarshal generic event", zap.Error(err))
-					continue
-				}
-
-				kind, ok := genericEvent["kind"].(string)
 				if !ok {
 					fmt.Printf("🔔 Unknown Event (no kind field)\n")
 					continue
@@ -827,18 +883,28 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 				default:
 					fmt.Printf("🔔 Unknown Event Type: %s\n", kind)
-					if showRaw {
-						eventJSON, err := json.MarshalIndent(event, "", "  ")
-						if err == nil {
-							fmt.Printf("%s\n", eventJSON)
-						}
-					}
 				}
 				fmt.Printf("\n")
 			}
 		}
 
-		fmt.Printf("✅ Streaming completed!\n")
+		duration := time.Since(startTime)
+
+		fmt.Printf("✅ Streaming completed!\n\n")
+		fmt.Printf("📋 Streaming Summary:\n")
+		fmt.Printf("  Task ID: %s\n", streamingSummary.TaskID)
+		fmt.Printf("  Context ID: %s\n", streamingSummary.ContextID)
+		fmt.Printf("  Final Status: %s\n", streamingSummary.FinalStatus)
+		fmt.Printf("  Duration: %s\n", duration.Round(time.Millisecond))
+		fmt.Printf("  Total Events: %d\n", streamingSummary.TotalEvents)
+		fmt.Printf("    Status Updates: %d\n", streamingSummary.StatusUpdates)
+		fmt.Printf("    Artifact Updates: %d\n", streamingSummary.ArtifactUpdates)
+
+		if streamingSummary.FinalMessage != nil {
+			fmt.Printf("  Final Message Parts: %d\n", len(streamingSummary.FinalMessage.Parts))
+		}
+
+		fmt.Printf("\n")
 		return nil
 	},
 }
