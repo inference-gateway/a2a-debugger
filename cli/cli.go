@@ -661,7 +661,7 @@ var submitTaskCmd = &cobra.Command{
 			params.Message.TaskID = &taskID
 		}
 
-		logger.Debug("Submitting new task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
+		logger.Debug("submitting new task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
 
 		resp, err := a2aClient.SendTask(ctx, params)
 		if err != nil {
@@ -728,7 +728,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 			params.Message.TaskID = &taskID
 		}
 
-		logger.Debug("Submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
+		logger.Debug("submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
 
 		eventChan := make(chan interface{}, 100)
 
