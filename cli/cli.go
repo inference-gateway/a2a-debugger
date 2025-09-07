@@ -108,7 +108,9 @@ func init() {
 	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
 	getTaskCmd.Flags().Int("history-length", 0, "Number of history messages to include")
 	submitTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
+	submitTaskCmd.Flags().String("task-id", "", "Task ID to resume (optional)")
 	submitStreamingTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
+	submitStreamingTaskCmd.Flags().String("task-id", "", "Task ID to resume (optional)")
 	submitStreamingTaskCmd.Flags().Bool("raw", false, "Show raw streaming event data instead of formatted output")
 }
 
@@ -633,6 +635,7 @@ var submitTaskCmd = &cobra.Command{
 
 		message := args[0]
 		contextID, _ := cmd.Flags().GetString("context-id")
+		taskID, _ := cmd.Flags().GetString("task-id")
 
 		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
 
@@ -654,7 +657,11 @@ var submitTaskCmd = &cobra.Command{
 			params.Message.ContextID = &contextID
 		}
 
-		logger.Debug("Submitting new task", zap.String("message", message), zap.String("context_id", contextID))
+		if taskID != "" {
+			params.Message.TaskID = &taskID
+		}
+
+		logger.Debug("submitting new task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
 
 		resp, err := a2aClient.SendTask(ctx, params)
 		if err != nil {
@@ -693,6 +700,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 		message := args[0]
 		contextID, _ := cmd.Flags().GetString("context-id")
+		taskID, _ := cmd.Flags().GetString("task-id")
 		showRaw, _ := cmd.Flags().GetBool("raw")
 
 		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
@@ -716,7 +724,11 @@ var submitStreamingTaskCmd = &cobra.Command{
 			params.Message.ContextID = &contextID
 		}
 
-		logger.Debug("Submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID))
+		if taskID != "" {
+			params.Message.TaskID = &taskID
+		}
+
+		logger.Debug("submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
 
 		eventChan := make(chan interface{}, 100)
 
