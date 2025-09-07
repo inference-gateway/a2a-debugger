@@ -68,19 +68,14 @@ func (m *mockA2AClient) GetLogger() *zap.Logger {
 }
 
 func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
-	// Setup
 	originalClient := a2aClient
 	originalLogger := logger
 
-	// Create a test logger that doesn't output to stdout
 	testLogger, _ := zap.NewDevelopment()
 	logger = testLogger
 
-	// Mock A2A client that sends test events
 	mockClient := &mockA2AClient{
 		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- interface{}) error {
-			// Send events in the same goroutine to avoid race conditions
-			// Send a status update event
 			statusEvent := a2a.TaskStatusUpdateEvent{
 				Kind:      "status-update",
 				TaskID:    "test-task-123",
@@ -103,7 +98,6 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 			}
 			eventChan <- statusEvent
 
-			// Send an artifact update event
 			artifactEvent := a2a.TaskArtifactUpdateEvent{
 				Kind:      "artifact-update",
 				TaskID:    "test-task-123",
@@ -120,7 +114,6 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 			}
 			eventChan <- artifactEvent
 
-			// Send final status update
 			finalStatusEvent := a2a.TaskStatusUpdateEvent{
 				Kind:      "status-update",
 				TaskID:    "test-task-123",
@@ -143,41 +136,34 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 			}
 			eventChan <- finalStatusEvent
 			
-			// Don't close the channel here - the CLI code handles this
 			return nil
 		},
 	}
 	a2aClient = mockClient
 
-	// Capture stdout
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	// Execute the command
 	cmd := &cobra.Command{}
 	cmd.Flags().String("context-id", "", "Context ID for the task")
 	cmd.Flags().Bool("raw", false, "Show raw streaming event data")
 	
 	err := submitStreamingTaskCmd.RunE(cmd, []string{"test message"})
 
-	// Restore stdout and capture output
 	_ = w.Close()
 	os.Stdout = oldStdout
 	var buf bytes.Buffer
 	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 
-	// Cleanup
 	a2aClient = originalClient
 	logger = originalLogger
 
-	// Assertions
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
-	// Check that the output contains expected summary elements
 	expectedParts := []string{
 		"Streaming Summary:",
 		"Task ID: test-task-123",
@@ -198,18 +184,14 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 }
 
 func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
-	// Setup
 	originalClient := a2aClient
 	originalLogger := logger
 
-	// Create a test logger that doesn't output to stdout
 	testLogger, _ := zap.NewDevelopment()
 	logger = testLogger
 
-	// Mock A2A client that sends test events
 	mockClient := &mockA2AClient{
 		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- interface{}) error {
-			// Send a simple status update event
 			statusEvent := a2a.TaskStatusUpdateEvent{
 				Kind:      "status-update",
 				TaskID:    "test-task-456",
@@ -221,18 +203,15 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 			}
 			eventChan <- statusEvent
 			
-			// Don't close the channel here - the CLI code handles this
 			return nil
 		},
 	}
 	a2aClient = mockClient
 
-	// Capture stdout
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	// Execute the command with raw flag
 	cmd := &cobra.Command{}
 	cmd.Flags().String("context-id", "", "Context ID for the task")
 	cmd.Flags().Bool("raw", true, "Show raw streaming event data")
@@ -240,23 +219,19 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 	
 	err := submitStreamingTaskCmd.RunE(cmd, []string{"test message"})
 
-	// Restore stdout and capture output
 	_ = w.Close()
 	os.Stdout = oldStdout
 	var buf bytes.Buffer
 	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 
-	// Cleanup
 	a2aClient = originalClient
 	logger = originalLogger
 
-	// Assertions
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
-	// In raw mode, should still show summary but also raw event data
 	expectedParts := []string{
 		"Raw Event:",
 		"Streaming Summary:",
