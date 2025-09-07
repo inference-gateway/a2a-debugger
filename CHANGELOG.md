@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.5.2...v0.6.0) (2025-09-07)
+
+### ✨ Features
+
+* Add task resumption support to submit commands ([#9](https://github.com/inference-gateway/a2a-debugger/issues/9)) ([ccd9cec](https://github.com/inference-gateway/a2a-debugger/commit/ccd9cec204f28b86d30847ad4eff7ea243c7f41b)), closes [#8](https://github.com/inference-gateway/a2a-debugger/issues/8)
+* **streaming:** Add comprehensive Task ID and summary display at end of streaming ([#7](https://github.com/inference-gateway/a2a-debugger/issues/7)) ([069cd58](https://github.com/inference-gateway/a2a-debugger/commit/069cd5844a353ae784955ea8fcde28615f6e7271)), closes [#6](https://github.com/inference-gateway/a2a-debugger/issues/6)
+
 ## [0.5.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.5.1...v0.5.2) (2025-08-28)
 
 ### ♻️ Improvements
