@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.6.0...v0.6.1) (2025-10-03)
+
+### ♻️ Improvements
+
+* **tasks:** Show all Task attributes in list command ([#13](https://github.com/inference-gateway/a2a-debugger/issues/13)) ([632c930](https://github.com/inference-gateway/a2a-debugger/commit/632c930c26907129e32493f95830a83ad593c408)), closes [#12](https://github.com/inference-gateway/a2a-debugger/issues/12)
+
 ## [0.6.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.5.2...v0.6.0) (2025-09-07)
 
 ### ✨ Features
