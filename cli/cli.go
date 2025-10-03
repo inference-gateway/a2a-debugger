@@ -448,7 +448,6 @@ var listTasksCmd = &cobra.Command{
 				fmt.Printf("   Timestamp: %s\n", *task.Status.Timestamp)
 			}
 			
-			// Display artifacts if any
 			if len(task.Artifacts) > 0 {
 				fmt.Printf("   Artifacts (%d):\n", len(task.Artifacts))
 				for j, artifact := range task.Artifacts {
@@ -466,7 +465,6 @@ var listTasksCmd = &cobra.Command{
 				fmt.Printf("   Artifacts: None\n")
 			}
 			
-			// Display metadata if any
 			if len(task.Metadata) > 0 {
 				fmt.Printf("   Metadata:\n")
 				for key, value := range task.Metadata {
