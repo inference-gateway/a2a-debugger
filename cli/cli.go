@@ -438,6 +438,7 @@ var listTasksCmd = &cobra.Command{
 		for i, task := range taskList.Tasks {
 			fmt.Printf("%d. Task ID: %s\n", i+1, task.ID)
 			fmt.Printf("   Context ID: %s\n", task.ContextID)
+			fmt.Printf("   Kind: %s\n", task.Kind)
 			fmt.Printf("   Status: %s\n", task.Status.State)
 			if task.Status.Message != nil {
 				fmt.Printf("   Message ID: %s\n", task.Status.Message.MessageID)
@@ -446,6 +447,35 @@ var listTasksCmd = &cobra.Command{
 			if task.Status.Timestamp != nil {
 				fmt.Printf("   Timestamp: %s\n", *task.Status.Timestamp)
 			}
+			
+			// Display artifacts if any
+			if len(task.Artifacts) > 0 {
+				fmt.Printf("   Artifacts (%d):\n", len(task.Artifacts))
+				for j, artifact := range task.Artifacts {
+					fmt.Printf("     %d. ID: %s", j+1, artifact.ArtifactID)
+					if artifact.Name != nil {
+						fmt.Printf(" | Name: %s", *artifact.Name)
+					}
+					if artifact.Description != nil {
+						fmt.Printf(" | Description: %s", *artifact.Description)
+					}
+					fmt.Printf(" | Parts: %d", len(artifact.Parts))
+					fmt.Printf("\n")
+				}
+			} else {
+				fmt.Printf("   Artifacts: None\n")
+			}
+			
+			// Display metadata if any
+			if len(task.Metadata) > 0 {
+				fmt.Printf("   Metadata:\n")
+				for key, value := range task.Metadata {
+					fmt.Printf("     %s: %v\n", key, value)
+				}
+			} else {
+				fmt.Printf("   Metadata: None\n")
+			}
+			
 			fmt.Printf("\n")
 		}
 
