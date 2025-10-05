@@ -62,7 +62,7 @@ func TestGetOutputFormat(t *testing.T) {
 }
 
 func TestFormatOutput(t *testing.T) {
-	testData := map[string]interface{}{
+	testData := map[string]any{
 		"name":    "test",
 		"version": "1.0.0",
 		"active":  true,
@@ -71,7 +71,7 @@ func TestFormatOutput(t *testing.T) {
 	tests := []struct {
 		name         string
 		outputFormat string
-		data         interface{}
+		data         any
 		validate     func([]byte) error
 	}{
 		{
@@ -79,7 +79,7 @@ func TestFormatOutput(t *testing.T) {
 			outputFormat: "yaml",
 			data:         testData,
 			validate: func(output []byte) error {
-				var result map[string]interface{}
+				var result map[string]any
 				if err := yaml.Unmarshal(output, &result); err != nil {
 					return fmt.Errorf("failed to parse YAML: %w", err)
 				}
@@ -94,7 +94,7 @@ func TestFormatOutput(t *testing.T) {
 			outputFormat: "json",
 			data:         testData,
 			validate: func(output []byte) error {
-				var result map[string]interface{}
+				var result map[string]any
 				if err := json.Unmarshal(output, &result); err != nil {
 					return fmt.Errorf("failed to parse JSON: %w", err)
 				}
@@ -123,7 +123,7 @@ func TestFormatOutput(t *testing.T) {
 }
 
 func TestPrintFormatted(t *testing.T) {
-	testData := map[string]interface{}{
+	testData := map[string]any{
 		"message": "hello world",
 		"status":  "success",
 	}
@@ -174,14 +174,13 @@ func TestPrintFormatted(t *testing.T) {
 					t.Error("Expected output but got none")
 				}
 
-				// Verify the output can be parsed back
 				if tt.outputFormat == "json" {
-					var result map[string]interface{}
+					var result map[string]any
 					if err := json.Unmarshal([]byte(output), &result); err != nil {
 						t.Errorf("Failed to parse JSON output: %v", err)
 					}
 				} else {
-					var result map[string]interface{}
+					var result map[string]any
 					if err := yaml.Unmarshal([]byte(output), &result); err != nil {
 						t.Errorf("Failed to parse YAML output: %v", err)
 					}

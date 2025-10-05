@@ -225,7 +225,7 @@ func getOutputFormat() OutputFormat {
 }
 
 // formatOutput formats the given data according to the specified format
-func formatOutput(data interface{}) ([]byte, error) {
+func formatOutput(data any) ([]byte, error) {
 	format := getOutputFormat()
 	switch format {
 	case OutputFormatJSON:
@@ -238,7 +238,7 @@ func formatOutput(data interface{}) ([]byte, error) {
 }
 
 // printFormatted outputs the data in the configured format
-func printFormatted(data interface{}) error {
+func printFormatted(data any) error {
 	output, err := formatOutput(data)
 	if err != nil {
 		return fmt.Errorf("failed to format output: %w", err)
@@ -329,7 +329,7 @@ var connectCmd = &cobra.Command{
 			return fmt.Errorf("failed to connect to A2A server: %w", err)
 		}
 
-		output := map[string]interface{}{
+		output := map[string]any{
 			"connected": true,
 			"agent":     agentCard,
 		}
@@ -382,7 +382,7 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
-		output := map[string]interface{}{
+		output := map[string]any{
 			"tasks":   taskList.Tasks,
 			"total":   taskList.Total,
 			"showing": len(taskList.Tasks),
@@ -466,7 +466,7 @@ var historyCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
-		output := map[string]interface{}{
+		output := map[string]any{
 			"context_id": contextID,
 			"tasks":      taskList.Tasks,
 		}
@@ -499,7 +499,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print version information",
 	Long:  "Display version information including version number, commit hash, and build date.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		version := map[string]interface{}{
+		version := map[string]any{
 			"name":    "A2A Debugger",
 			"version": appVersion,
 			"commit":  buildCommit,
@@ -530,7 +530,7 @@ var submitTaskCmd = &cobra.Command{
 				MessageID: messageID,
 				Role:      "user",
 				Parts: []adk.Part{
-					map[string]interface{}{
+					map[string]any{
 						"kind": "text",
 						"text": message,
 					},
@@ -563,7 +563,7 @@ var submitTaskCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task: %w", err)
 		}
 
-		output := map[string]interface{}{
+		output := map[string]any{
 			"submitted":  true,
 			"message_id": messageID,
 			"task":       task,
@@ -596,7 +596,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				MessageID: messageID,
 				Role:      "user",
 				Parts: []adk.Part{
-					map[string]interface{}{
+					map[string]any{
 						"kind": "text",
 						"text": message,
 					},
@@ -614,7 +614,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 		logger.Debug("submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
 
-		eventChan := make(chan interface{}, 100)
+		eventChan := make(chan any, 100)
 
 		go func() {
 			defer close(eventChan)
@@ -650,7 +650,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				continue
 			}
 
-			var genericEvent map[string]interface{}
+			var genericEvent map[string]any
 			if err := json.Unmarshal(eventJSON, &genericEvent); err != nil {
 				logger.Error("Failed to unmarshal generic event", zap.Error(err))
 				continue
@@ -733,7 +733,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 					if statusEvent.Status.Message != nil && len(statusEvent.Status.Message.Parts) > 0 {
 						fmt.Printf("\n💬 Agent Response:\n")
 						for _, part := range statusEvent.Status.Message.Parts {
-							if partMap, ok := part.(map[string]interface{}); ok {
+							if partMap, ok := part.(map[string]any); ok {
 								if kind, ok := partMap["kind"].(string); ok && kind == "text" {
 									if text, ok := partMap["text"].(string); ok {
 										fmt.Printf("%s\n", text)
@@ -762,7 +762,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 					if len(artifactEvent.Artifact.Parts) > 0 {
 						fmt.Printf("  Parts:\n")
 						for i, part := range artifactEvent.Artifact.Parts {
-							if partMap, ok := part.(map[string]interface{}); ok {
+							if partMap, ok := part.(map[string]any); ok {
 								if kind, exists := partMap["kind"]; exists {
 									fmt.Printf("    Part %d: [%v]", i+1, kind)
 									if text, exists := partMap["text"]; exists {
