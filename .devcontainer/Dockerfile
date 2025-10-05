@@ -1,11 +1,11 @@
-FROM mcr.microsoft.com/devcontainers/go:1-1.24-bookworm
+FROM mcr.microsoft.com/devcontainers/go:2-1.25-bookworm
 
-ENV TASK_VERSION=v3.44.0 \
-    GORELEASER_VERSION=v2.9.0 \
-    GOLANG_CI_LINT_VERSION=v2.1.6 \
-    GITHUB_CLI_VERSION=2.68.1 \
+ENV TASK_VERSION=v3.45.4 \
+    GORELEASER_VERSION=v2.12.0 \
+    GOLANG_CI_LINT_VERSION=v2.5.0 \
+    GITHUB_CLI_VERSION=2.81.0 \
     NODE_VERSION=lts \
-    SEMANTIC_RELEASE_VERSION=v24.2.5
+    SEMANTIC_RELEASE_VERSION=v24.2.9
 
 RUN apt-get update && \
     # Determine architecture

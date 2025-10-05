@@ -16,7 +16,7 @@ tasks:
   generate:
     desc: 'Generate Go code from the official A2A JSON RPC Schema'
     cmds:
-      - go run github.com/inference-gateway/tools/cmd/generator@v0.1.1 -generator jsonrpc -package a2a a2a/schema.yaml a2a/generated_types.go
+      - go run github.com/inference-gateway/tools/cmd/generator@v0.1.2 -generator jsonrpc -package a2a a2a/schema.yaml a2a/generated_types.go
 
   tidy:
     desc: 'Run go mod tidy to clean up dependencies'

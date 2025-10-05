@@ -4,23 +4,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A2A Debugger is a command-line debugging tool for A2A (Agent-to-Agent) servers. It's built in Go using the Cobra CLI framework and integrates with the Inference Gateway A2A ecosystem for testing connections, managing tasks, viewing conversation histories, and monitoring streaming responses.
+A2A Debugger is a CLI tool for debugging and monitoring A2A (Agent-to-Agent) servers. It's built with Go and uses the Cobra framework for command-line interface, with Viper for configuration management.
 
-## Development Commands
+**Core Dependencies:**
+- `github.com/inference-gateway/adk` - The A2A Agent Development Kit client library
+- `github.com/spf13/cobra` - CLI framework
+- `github.com/spf13/viper` - Configuration management
+- `go.uber.org/zap` - Structured logging
 
-### Core Development Workflow
+## Architecture
+
+### Code Generation
+
+The `a2a/generated_types.go` file is **auto-generated** from the A2A JSON-RPC schema and should **NEVER** be edited manually. To regenerate:
+
+1. Download latest schema: `task a2a:download:schema`
+2. Generate types: `task generate`
+
+The generator reads `a2a/schema.yaml` and produces Go types for the A2A protocol.
+
+### CLI Command Structure
+
+All CLI commands are implemented in a **single file**: `cli/cli.go` (~806 lines). The command structure is namespace-based:
+
+- **Config namespace** (`a2a config`): Configuration management (set, get, list)
+- **Tasks namespace** (`a2a tasks`): Task operations (list, get, history, submit, submit-streaming)
+- **Server commands**: `connect`, `agent-card`, `version`
+
+Key architectural patterns:
+- `ensureA2AClient()` - Lazy initialization of A2A client
+- `handleA2AError()` - Centralized error handling for method-not-found errors
+- `formatOutput()` / `printFormatted()` - Support for YAML (default) and JSON output formats
+
+### Entry Point
+
+`main.go` is minimal - it just passes version info to `cli.Execute()`.
+
+## Common Commands
+
+### Development Workflow
 
 ```bash
-# Generate Go code from A2A schema (always run before commit)
+# Generate code from schema (required after schema updates)
 task generate
 
-# Run linting (required before commit)
+# Run linting
 task lint
 
-# Build the project
+# Build with version info
 task build
 
-# Build for development (no version info)
+# Quick dev build (no version info)
 task build:dev
 
 # Run tests
@@ -31,16 +65,21 @@ task test:coverage
 
 # Clean build artifacts
 task clean
+
+# Tidy dependencies
+task tidy
 ```
 
-### Schema and Dependencies
+### Testing the CLI
 
 ```bash
-# Download latest A2A schema
-task a2a:download:schema
+# Run the built binary
+./dist/a2a --help
 
-# Clean up Go module dependencies
-task tidy
+# Test with local A2A server (example environment)
+cd example
+docker compose up -d
+docker compose run --rm a2a-debugger connect
 ```
 
 ### Installation
@@ -53,121 +92,50 @@ task install
 task uninstall
 ```
 
-### Docker
-
-```bash
-# Build Docker image with version info
-task build:docker
-```
-
-## Code Architecture
-
-### Project Structure
-
-- `main.go`: Entry point, passes version info to CLI
-- `cli/cli.go`: Main CLI implementation using Cobra framework
-- `a2a/`: A2A protocol types and schema
-  - `generated_types.go`: Auto-generated from A2A JSON-RPC schema
-  - `schema.yaml`: Official A2A schema (downloaded from inference-gateway/schemas)
-
-### Key Components
-
-#### CLI Architecture (cli/cli.go)
-
-- **Root Command**: Main `a2a` command with global flags
-- **Namespace Commands**:
-  - `config`: Configuration management (set/get/list)
-  - `tasks`: Task operations (list/get/history/submit/submit-streaming)
-  - Standalone: `connect`, `agent-card`, `version`
-
-#### Configuration System
-
-- Uses Viper for configuration management
-- Config file: `~/.a2a.yaml`
-- Environment variable support with automatic binding
-- Global flags: `--server-url`, `--timeout`, `--debug`, `--insecure`, `--config`
-
-#### A2A Client Integration
-
-- Uses `github.com/inference-gateway/a2a/adk/client` for server communication
-- Lazy initialization via `ensureA2AClient()`
-- Error handling with user-friendly messages for MethodNotFoundError (-32601)
-- Structured logging with Zap
-
-#### Task Management
-
-- **List Tasks**: Filter by state, context-id, with pagination
-- **Get Task**: Detailed task info with optional history
-- **Submit Task**: Send messages to A2A server
-- **Submit Streaming**: Real-time streaming with event processing
-- **History**: Conversation history by context ID
-
-#### Streaming Support
-
-- Event channel-based streaming architecture
-- Event types: `status-update`, `artifact-update`
-- Raw mode for debugging protocol compliance
-- Graceful handling of streaming responses
-
-### Dependencies
-
-- **CLI Framework**: `github.com/spf13/cobra` + `github.com/spf13/viper`
-- **A2A SDK**: `github.com/inference-gateway/a2a`
-- **Logging**: `go.uber.org/zap`
-- **Go Version**: 1.24+
-
-## Development Guidelines
-
-### Code Generation
-
-- Always run `task generate` before committing to update generated types
-- Generated files have `generated_` prefix - never modify manually
-- Schema updates require downloading latest from inference-gateway/schemas
-
-### Testing Strategy
-
-- Use table-driven testing patterns
-- Each test case should have isolated mock servers
-- Early returns over deep nesting
-- Prefer switch statements over if-else chains
-
-### Error Handling
-
-- Custom error handling for A2A protocol errors
-- User-friendly messages for common errors (e.g., MethodNotFoundError)
-- Structured logging for debugging
-
-### Type Safety
-
-- Code to interfaces for easier mocking
-- Strong typing over dynamic typing
-- Use generated types from A2A schema
-
-### Pre-commit Workflow
-
-1. `task generate` - Update generated files
-2. `task lint` - Code quality checks
-3. `task build` - Verify compilation
-4. `task test` - Ensure tests pass
-
 ## Configuration
 
-### Default Configuration
+- Default config location: `~/.a2a.yaml`
+- Environment variables are auto-loaded via Viper
+- All flags can be set in config file or via CLI flags
 
+Config file format:
 ```yaml
 server-url: http://localhost:8080
 timeout: 30s
 debug: false
 insecure: false
+output: yaml  # or json
 ```
 
-### Environment Variables
+## CI/CD Pipeline
 
-All configuration keys can be set via environment variables (automatic Viper binding).
+The CI workflow (`task generate` → `task tidy` → dirty check → `task lint` → `task build` → `task test`) ensures:
+1. Generated code is up-to-date
+2. Dependencies are tidy
+3. No uncommitted changes
+4. Code passes linting
+5. Build succeeds
+6. Tests pass
 
-## Related Repositories
+## Adding New Commands
 
-- [Inference Gateway](https://github.com/inference-gateway)
-- [A2A ADK](https://github.com/inference-gateway/a2a) - Agent Development Kit
-- [Go SDK](https://github.com/inference-gateway/go-sdk)
-- [Schemas](https://github.com/inference-gateway/schemas) - A2A protocol schemas
+When adding commands to `cli/cli.go`:
+1. Define the command with Cobra
+2. Use `ensureA2AClient()` before making A2A calls
+3. Use `handleA2AError()` for error handling
+4. Use `printFormatted()` for structured output
+5. Register the command in `init()` function
+6. Add flags if needed (global flags are on `rootCmd`, command-specific on the command itself)
+
+## Running Tests
+
+Single test: `go test ./cli -run TestSpecificFunction`
+All tests: `task test`
+Coverage: `task test:coverage`
+
+## Docker Build
+
+```bash
+# Build Docker image with version info
+task build:docker
+```

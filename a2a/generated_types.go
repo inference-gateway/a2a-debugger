@@ -1,7 +1,7 @@
 // Code generated from JSON schema. DO NOT EDIT.
 package a2a
 
-// Represents the possible states of a Task.
+// Defines the lifecycle states of a Task.
 type TaskState string
 
 // TaskState enum values
@@ -17,12 +17,23 @@ const (
 	TaskStateWorking       TaskState = "working"
 )
 
-type A2AError interface{}
+// Supported A2A transport protocols.
+type TransportProtocol string
 
-// A2A supported request types
-type A2ARequest interface{}
+// TransportProtocol enum values
+const (
+	TransportProtocolGrpc     TransportProtocol = "GRPC"
+	TransportProtocolHttpjson TransportProtocol = "HTTP+JSON"
+	TransportProtocolJSONRPC  TransportProtocol = "JSONRPC"
+)
 
-// API Key security scheme.
+// A discriminated union of all standard JSON-RPC and A2A-specific error types.
+type A2AError any
+
+// A discriminated union representing all possible JSON-RPC 2.0 requests supported by the A2A specification.
+type A2ARequest any
+
+// Defines a security scheme using an API key.
 type APIKeySecurityScheme struct {
 	Description *string `json:"description,omitempty"`
 	In          string  `json:"in"`
@@ -38,11 +49,9 @@ type AgentCapabilities struct {
 	Streaming              *bool            `json:"streaming,omitempty"`
 }
 
-// An AgentCard conveys key information:
-// - Overall details (version, name, description, uses)
-// - Skills: A set of capabilities the agent can perform
-// - Default modalities/content types supported by the agent.
-// - Authentication requirements
+// The AgentCard is a self-describing manifest for an agent. It provides essential
+// metadata including the agent's identity, capabilities, skills, supported
+// communication methods, and security requirements.
 type AgentCard struct {
 	AdditionalInterfaces              []AgentInterface          `json:"additionalInterfaces,omitempty"`
 	Capabilities                      AgentCapabilities         `json:"capabilities"`
@@ -52,26 +61,36 @@ type AgentCard struct {
 	DocumentationURL                  *string                   `json:"documentationUrl,omitempty"`
 	IconURL                           *string                   `json:"iconUrl,omitempty"`
 	Name                              string                    `json:"name"`
-	PreferredTransport                *string                   `json:"preferredTransport,omitempty"`
+	PreferredTransport                string                    `json:"preferredTransport,omitempty"`
+	ProtocolVersion                   string                    `json:"protocolVersion"`
 	Provider                          *AgentProvider            `json:"provider,omitempty"`
 	Security                          []map[string][]string     `json:"security,omitempty"`
 	SecuritySchemes                   map[string]SecurityScheme `json:"securitySchemes,omitempty"`
+	Signatures                        []AgentCardSignature      `json:"signatures,omitempty"`
 	Skills                            []AgentSkill              `json:"skills"`
 	SupportsAuthenticatedExtendedCard *bool                     `json:"supportsAuthenticatedExtendedCard,omitempty"`
 	URL                               string                    `json:"url"`
 	Version                           string                    `json:"version"`
 }
 
-// A declaration of an extension supported by an Agent.
-type AgentExtension struct {
-	Description *string                `json:"description,omitempty"`
-	Params      map[string]interface{} `json:"params,omitempty"`
-	Required    *bool                  `json:"required,omitempty"`
-	URI         string                 `json:"uri"`
+// AgentCardSignature represents a JWS signature of an AgentCard.
+// This follows the JSON format of an RFC 7515 JSON Web Signature (JWS).
+type AgentCardSignature struct {
+	Header    map[string]any `json:"header,omitempty"`
+	Protected string         `json:"protected"`
+	Signature string         `json:"signature"`
 }
 
-// AgentInterface provides a declaration of a combination of the
-// target url and the supported transport to interact with the agent.
+// A declaration of a protocol extension supported by an Agent.
+type AgentExtension struct {
+	Description *string        `json:"description,omitempty"`
+	Params      map[string]any `json:"params,omitempty"`
+	Required    *bool          `json:"required,omitempty"`
+	URI         string         `json:"uri"`
+}
+
+// Declares a combination of a target URL and a transport protocol for interacting with the agent.
+// This allows agents to expose the same functionality over multiple transport mechanisms.
 type AgentInterface struct {
 	Transport string `json:"transport"`
 	URL       string `json:"url"`
@@ -83,28 +102,36 @@ type AgentProvider struct {
 	URL          string `json:"url"`
 }
 
-// Represents a unit of capability that an agent can perform.
+// Represents a distinct capability or function that an agent can perform.
 type AgentSkill struct {
-	Description string   `json:"description"`
-	Examples    []string `json:"examples,omitempty"`
-	ID          string   `json:"id"`
-	InputModes  []string `json:"inputModes,omitempty"`
-	Name        string   `json:"name"`
-	OutputModes []string `json:"outputModes,omitempty"`
-	Tags        []string `json:"tags"`
+	Description string                `json:"description"`
+	Examples    []string              `json:"examples,omitempty"`
+	ID          string                `json:"id"`
+	InputModes  []string              `json:"inputModes,omitempty"`
+	Name        string                `json:"name"`
+	OutputModes []string              `json:"outputModes,omitempty"`
+	Security    []map[string][]string `json:"security,omitempty"`
+	Tags        []string              `json:"tags"`
 }
 
-// Represents an artifact generated for a task.
+// Represents a file, data structure, or other resource generated by an agent during a task.
 type Artifact struct {
-	ArtifactID  string                 `json:"artifactId"`
-	Description *string                `json:"description,omitempty"`
-	Extensions  []string               `json:"extensions,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	Name        *string                `json:"name,omitempty"`
-	Parts       []Part                 `json:"parts"`
+	ArtifactID  string         `json:"artifactId"`
+	Description *string        `json:"description,omitempty"`
+	Extensions  []string       `json:"extensions,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
+	Name        *string        `json:"name,omitempty"`
+	Parts       []Part         `json:"parts"`
 }
 
-// Configuration details for a supported OAuth Flow
+// An A2A-specific error indicating that the agent does not have an Authenticated Extended Card configured
+type AuthenticatedExtendedCardNotConfiguredError struct {
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
+}
+
+// Defines configuration details for the OAuth 2.0 Authorization Code flow.
 type AuthorizationCodeOAuthFlow struct {
 	AuthorizationURL string            `json:"authorizationUrl"`
 	RefreshURL       *string           `json:"refreshUrl,omitempty"`
@@ -112,141 +139,160 @@ type AuthorizationCodeOAuthFlow struct {
 	TokenURL         string            `json:"tokenUrl"`
 }
 
-// JSON-RPC request model for the 'tasks/cancel' method.
+// Represents a JSON-RPC request for the `tasks/cancel` method.
 type CancelTaskRequest struct {
-	ID      interface{}  `json:"id"`
+	ID      any          `json:"id"`
 	JSONRPC string       `json:"jsonrpc"`
 	Method  string       `json:"method"`
 	Params  TaskIdParams `json:"params"`
 }
 
-// JSON-RPC response for the 'tasks/cancel' method.
-type CancelTaskResponse interface{}
+// Represents a JSON-RPC response for the `tasks/cancel` method.
+type CancelTaskResponse any
 
-// JSON-RPC success response model for the 'tasks/cancel' method.
+// Represents a successful JSON-RPC response for the `tasks/cancel` method.
 type CancelTaskSuccessResponse struct {
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  Task        `json:"result"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Result  Task   `json:"result"`
 }
 
-// Configuration details for a supported OAuth Flow
+// Defines configuration details for the OAuth 2.0 Client Credentials flow.
 type ClientCredentialsOAuthFlow struct {
 	RefreshURL *string           `json:"refreshUrl,omitempty"`
 	Scopes     map[string]string `json:"scopes"`
 	TokenURL   string            `json:"tokenUrl"`
 }
 
-// A2A specific error indicating incompatible content types between request and agent capabilities.
+// An A2A-specific error indicating an incompatibility between the requested
+// content types and the agent's capabilities.
 type ContentTypeNotSupportedError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// Represents a structured data segment within a message part.
+// Represents a structured data segment (e.g., JSON) within a message or artifact.
 type DataPart struct {
-	Data     map[string]interface{} `json:"data"`
-	Kind     string                 `json:"kind"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Data     map[string]any `json:"data"`
+	Kind     string         `json:"kind"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// Parameters for removing pushNotificationConfiguration associated with a Task
+// Defines parameters for deleting a specific push notification configuration for a task.
 type DeleteTaskPushNotificationConfigParams struct {
-	ID                       string                 `json:"id"`
-	Metadata                 map[string]interface{} `json:"metadata,omitempty"`
-	PushNotificationConfigID string                 `json:"pushNotificationConfigId"`
+	ID                       string         `json:"id"`
+	Metadata                 map[string]any `json:"metadata,omitempty"`
+	PushNotificationConfigID string         `json:"pushNotificationConfigId"`
 }
 
-// JSON-RPC request model for the 'tasks/pushNotificationConfig/delete' method.
+// Represents a JSON-RPC request for the `tasks/pushNotificationConfig/delete` method.
 type DeleteTaskPushNotificationConfigRequest struct {
-	ID      interface{}                            `json:"id"`
+	ID      any                                    `json:"id"`
 	JSONRPC string                                 `json:"jsonrpc"`
 	Method  string                                 `json:"method"`
 	Params  DeleteTaskPushNotificationConfigParams `json:"params"`
 }
 
-// JSON-RPC response for the 'tasks/pushNotificationConfig/delete' method.
-type DeleteTaskPushNotificationConfigResponse interface{}
+// Represents a JSON-RPC response for the `tasks/pushNotificationConfig/delete` method.
+type DeleteTaskPushNotificationConfigResponse any
 
-// JSON-RPC success response model for the 'tasks/pushNotificationConfig/delete' method.
+// Represents a successful JSON-RPC response for the `tasks/pushNotificationConfig/delete` method.
 type DeleteTaskPushNotificationConfigSuccessResponse struct {
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  interface{} `json:"result"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Result  any    `json:"result"`
 }
 
-// Represents the base entity for FileParts
+// Defines base properties for a file.
 type FileBase struct {
 	MIMEType *string `json:"mimeType,omitempty"`
 	Name     *string `json:"name,omitempty"`
 }
 
-// Represents a File segment within parts.
+// Represents a file segment within a message or artifact. The file content can be
+// provided either directly as bytes or as a URI.
 type FilePart struct {
-	File     interface{}            `json:"file"`
-	Kind     string                 `json:"kind"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	File     any            `json:"file"`
+	Kind     string         `json:"kind"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// Define the variant where 'bytes' is present and 'uri' is absent
+// Represents a file with its content provided directly as a base64-encoded string.
 type FileWithBytes struct {
 	Bytes    string  `json:"bytes"`
 	MIMEType *string `json:"mimeType,omitempty"`
 	Name     *string `json:"name,omitempty"`
 }
 
-// Define the variant where 'uri' is present and 'bytes' is absent
+// Represents a file with its content located at a specific URI.
 type FileWithUri struct {
 	MIMEType *string `json:"mimeType,omitempty"`
 	Name     *string `json:"name,omitempty"`
 	URI      string  `json:"uri"`
 }
 
-// Parameters for fetching a pushNotificationConfiguration associated with a Task
+// Represents a JSON-RPC request for the `agent/getAuthenticatedExtendedCard` method.
+type GetAuthenticatedExtendedCardRequest struct {
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Method  string `json:"method"`
+}
+
+// Represents a JSON-RPC response for the `agent/getAuthenticatedExtendedCard` method.
+type GetAuthenticatedExtendedCardResponse any
+
+// Represents a successful JSON-RPC response for the `agent/getAuthenticatedExtendedCard` method.
+type GetAuthenticatedExtendedCardSuccessResponse struct {
+	ID      any       `json:"id"`
+	JSONRPC string    `json:"jsonrpc"`
+	Result  AgentCard `json:"result"`
+}
+
+// Defines parameters for fetching a specific push notification configuration for a task.
 type GetTaskPushNotificationConfigParams struct {
-	ID                       string                 `json:"id"`
-	Metadata                 map[string]interface{} `json:"metadata,omitempty"`
-	PushNotificationConfigID *string                `json:"pushNotificationConfigId,omitempty"`
+	ID                       string         `json:"id"`
+	Metadata                 map[string]any `json:"metadata,omitempty"`
+	PushNotificationConfigID *string        `json:"pushNotificationConfigId,omitempty"`
 }
 
-// JSON-RPC request model for the 'tasks/pushNotificationConfig/get' method.
+// Represents a JSON-RPC request for the `tasks/pushNotificationConfig/get` method.
 type GetTaskPushNotificationConfigRequest struct {
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  any    `json:"params"`
 }
 
-// JSON-RPC response for the 'tasks/pushNotificationConfig/set' method.
-type GetTaskPushNotificationConfigResponse interface{}
+// Represents a JSON-RPC response for the `tasks/pushNotificationConfig/get` method.
+type GetTaskPushNotificationConfigResponse any
 
-// JSON-RPC success response model for the 'tasks/pushNotificationConfig/get' method.
+// Represents a successful JSON-RPC response for the `tasks/pushNotificationConfig/get` method.
 type GetTaskPushNotificationConfigSuccessResponse struct {
-	ID      interface{}                `json:"id"`
+	ID      any                        `json:"id"`
 	JSONRPC string                     `json:"jsonrpc"`
 	Result  TaskPushNotificationConfig `json:"result"`
 }
 
-// JSON-RPC request model for the 'tasks/get' method.
+// Represents a JSON-RPC request for the `tasks/get` method.
 type GetTaskRequest struct {
-	ID      interface{}     `json:"id"`
+	ID      any             `json:"id"`
 	JSONRPC string          `json:"jsonrpc"`
 	Method  string          `json:"method"`
 	Params  TaskQueryParams `json:"params"`
 }
 
-// JSON-RPC response for the 'tasks/get' method.
-type GetTaskResponse interface{}
+// Represents a JSON-RPC response for the `tasks/get` method.
+type GetTaskResponse any
 
-// JSON-RPC success response for the 'tasks/get' method.
+// Represents a successful JSON-RPC response for the `tasks/get` method.
 type GetTaskSuccessResponse struct {
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  Task        `json:"result"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Result  Task   `json:"result"`
 }
 
-// HTTP Authentication security scheme.
+// Defines a security scheme using HTTP authentication.
 type HTTPAuthSecurityScheme struct {
 	BearerFormat *string `json:"bearerFormat,omitempty"`
 	Description  *string `json:"description,omitempty"`
@@ -254,154 +300,163 @@ type HTTPAuthSecurityScheme struct {
 	Type         string  `json:"type"`
 }
 
-// Configuration details for a supported OAuth Flow
+// Defines configuration details for the OAuth 2.0 Implicit flow.
 type ImplicitOAuthFlow struct {
 	AuthorizationURL string            `json:"authorizationUrl"`
 	RefreshURL       *string           `json:"refreshUrl,omitempty"`
 	Scopes           map[string]string `json:"scopes"`
 }
 
-// JSON-RPC error indicating an internal JSON-RPC error on the server.
+// An error indicating an internal error on the server.
 type InternalError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// A2A specific error indicating agent returned invalid response for the current method
+// An A2A-specific error indicating that the agent returned a response that
+// does not conform to the specification for the current method.
 type InvalidAgentResponseError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// JSON-RPC error indicating invalid method parameter(s).
+// An error indicating that the method parameters are invalid.
 type InvalidParamsError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// JSON-RPC error indicating the JSON sent is not a valid Request object.
+// An error indicating that the JSON sent is not a valid Request object.
 type InvalidRequestError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// JSON-RPC error indicating invalid JSON was received by the server.
+// An error indicating that the server received invalid JSON.
 type JSONParseError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// Represents a JSON-RPC 2.0 Error object.
-// This is typically included in a JSONRPCErrorResponse when an error occurs.
+// Represents a JSON-RPC 2.0 Error object, included in an error response.
 type JSONRPCError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
 // Represents a JSON-RPC 2.0 Error Response object.
 type JSONRPCErrorResponse struct {
-	Error   interface{} `json:"error"`
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
+	Error   any    `json:"error"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
 }
 
-// Base interface for any JSON-RPC 2.0 request or response.
+// Defines the base structure for any JSON-RPC 2.0 request, response, or notification.
 type JSONRPCMessage struct {
-	ID      *interface{} `json:"id,omitempty"`
-	JSONRPC string       `json:"jsonrpc"`
+	ID      *any   `json:"id,omitempty"`
+	JSONRPC string `json:"jsonrpc"`
 }
 
 // Represents a JSON-RPC 2.0 Request object.
 type JSONRPCRequest struct {
-	ID      *interface{}           `json:"id,omitempty"`
-	JSONRPC string                 `json:"jsonrpc"`
-	Method  string                 `json:"method"`
-	Params  map[string]interface{} `json:"params,omitempty"`
+	ID      *any           `json:"id,omitempty"`
+	JSONRPC string         `json:"jsonrpc"`
+	Method  string         `json:"method"`
+	Params  map[string]any `json:"params,omitempty"`
 }
 
-// Represents a JSON-RPC 2.0 Response object.
-type JSONRPCResponse interface{}
+// A discriminated union representing all possible JSON-RPC 2.0 responses
+// for the A2A specification methods.
+type JSONRPCResponse any
 
-// Represents a JSON-RPC 2.0 Success Response object.
+// Represents a successful JSON-RPC 2.0 Response object.
 type JSONRPCSuccessResponse struct {
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  interface{} `json:"result"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Result  any    `json:"result"`
 }
 
-// Parameters for getting list of pushNotificationConfigurations associated with a Task
+// Defines parameters for listing all push notification configurations associated with a task.
 type ListTaskPushNotificationConfigParams struct {
-	ID       string                 `json:"id"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// JSON-RPC request model for the 'tasks/pushNotificationConfig/list' method.
+// Represents a JSON-RPC request for the `tasks/pushNotificationConfig/list` method.
 type ListTaskPushNotificationConfigRequest struct {
-	ID      interface{}                          `json:"id"`
+	ID      any                                  `json:"id"`
 	JSONRPC string                               `json:"jsonrpc"`
 	Method  string                               `json:"method"`
 	Params  ListTaskPushNotificationConfigParams `json:"params"`
 }
 
-// JSON-RPC response for the 'tasks/pushNotificationConfig/list' method.
-type ListTaskPushNotificationConfigResponse interface{}
+// Represents a JSON-RPC response for the `tasks/pushNotificationConfig/list` method.
+type ListTaskPushNotificationConfigResponse any
 
-// JSON-RPC success response model for the 'tasks/pushNotificationConfig/list' method.
+// Represents a successful JSON-RPC response for the `tasks/pushNotificationConfig/list` method.
 type ListTaskPushNotificationConfigSuccessResponse struct {
-	ID      interface{}                  `json:"id"`
+	ID      any                          `json:"id"`
 	JSONRPC string                       `json:"jsonrpc"`
 	Result  []TaskPushNotificationConfig `json:"result"`
 }
 
-// Represents a single message exchanged between user and agent.
+// Represents a single message in the conversation between a user and an agent.
 type Message struct {
-	ContextID        *string                `json:"contextId,omitempty"`
-	Extensions       []string               `json:"extensions,omitempty"`
-	Kind             string                 `json:"kind"`
-	MessageID        string                 `json:"messageId"`
-	Metadata         map[string]interface{} `json:"metadata,omitempty"`
-	Parts            []Part                 `json:"parts"`
-	ReferenceTaskIds []string               `json:"referenceTaskIds,omitempty"`
-	Role             string                 `json:"role"`
-	TaskID           *string                `json:"taskId,omitempty"`
+	ContextID        *string        `json:"contextId,omitempty"`
+	Extensions       []string       `json:"extensions,omitempty"`
+	Kind             string         `json:"kind"`
+	MessageID        string         `json:"messageId"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
+	Parts            []Part         `json:"parts"`
+	ReferenceTaskIds []string       `json:"referenceTaskIds,omitempty"`
+	Role             string         `json:"role"`
+	TaskID           *string        `json:"taskId,omitempty"`
 }
 
-// Configuration for the send message request.
+// Defines configuration options for a `message/send` or `message/stream` request.
 type MessageSendConfiguration struct {
-	AcceptedOutputModes    []string                `json:"acceptedOutputModes"`
+	AcceptedOutputModes    []string                `json:"acceptedOutputModes,omitempty"`
 	Blocking               *bool                   `json:"blocking,omitempty"`
 	HistoryLength          *int                    `json:"historyLength,omitempty"`
 	PushNotificationConfig *PushNotificationConfig `json:"pushNotificationConfig,omitempty"`
 }
 
-// Sent by the client to the agent as a request. May create, continue or restart a task.
+// Defines the parameters for a request to send a message to an agent. This can be used
+// to create a new task, continue an existing one, or restart a task.
 type MessageSendParams struct {
 	Configuration *MessageSendConfiguration `json:"configuration,omitempty"`
 	Message       Message                   `json:"message"`
-	Metadata      map[string]interface{}    `json:"metadata,omitempty"`
+	Metadata      map[string]any            `json:"metadata,omitempty"`
 }
 
-// JSON-RPC error indicating the method does not exist or is not available.
+// An error indicating that the requested method does not exist or is not available.
 type MethodNotFoundError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// OAuth2.0 security scheme configuration.
+// Defines a security scheme using mTLS authentication.
+type MutualTLSSecurityScheme struct {
+	Description *string `json:"description,omitempty"`
+	Type        string  `json:"type"`
+}
+
+// Defines a security scheme using OAuth 2.0.
 type OAuth2SecurityScheme struct {
-	Description *string    `json:"description,omitempty"`
-	Flows       OAuthFlows `json:"flows"`
-	Type        string     `json:"type"`
+	Description       *string    `json:"description,omitempty"`
+	Flows             OAuthFlows `json:"flows"`
+	Oauth2metadataURL *string    `json:"oauth2MetadataUrl,omitempty"`
+	Type              string     `json:"type"`
 }
 
-// Allows configuration of the supported OAuth Flows
+// Defines the configuration for the supported OAuth 2.0 flows.
 type OAuthFlows struct {
 	AuthorizationCode *AuthorizationCodeOAuthFlow `json:"authorizationCode,omitempty"`
 	ClientCredentials *ClientCredentialsOAuthFlow `json:"clientCredentials,omitempty"`
@@ -409,35 +464,36 @@ type OAuthFlows struct {
 	Password          *PasswordOAuthFlow          `json:"password,omitempty"`
 }
 
-// OpenID Connect security scheme configuration.
+// Defines a security scheme using OpenID Connect.
 type OpenIdConnectSecurityScheme struct {
 	Description      *string `json:"description,omitempty"`
 	OpenIDConnectURL string  `json:"openIdConnectUrl"`
 	Type             string  `json:"type"`
 }
 
-// Represents a part of a message, which can be text, a file, or structured data.
-type Part interface{}
+// A discriminated union representing a part of a message or artifact, which can
+// be text, a file, or structured data.
+type Part any
 
-// Base properties common to all message parts.
+// Defines base properties common to all message or artifact parts.
 type PartBase struct {
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// Configuration details for a supported OAuth Flow
+// Defines configuration details for the OAuth 2.0 Resource Owner Password flow.
 type PasswordOAuthFlow struct {
 	RefreshURL *string           `json:"refreshUrl,omitempty"`
 	Scopes     map[string]string `json:"scopes"`
 	TokenURL   string            `json:"tokenUrl"`
 }
 
-// Defines authentication details for push notifications.
+// Defines authentication details for a push notification endpoint.
 type PushNotificationAuthenticationInfo struct {
 	Credentials *string  `json:"credentials,omitempty"`
 	Schemes     []string `json:"schemes"`
 }
 
-// Configuration for setting up push notifications for task updates.
+// Defines the configuration for setting up push notifications for task updates.
 type PushNotificationConfig struct {
 	Authentication *PushNotificationAuthenticationInfo `json:"authentication,omitempty"`
 	ID             *string                             `json:"id,omitempty"`
@@ -445,165 +501,169 @@ type PushNotificationConfig struct {
 	URL            string                              `json:"url"`
 }
 
-// A2A specific error indicating the agent does not support push notifications.
+// An A2A-specific error indicating that the agent does not support push notifications.
 type PushNotificationNotSupportedError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// Mirrors the OpenAPI Security Scheme Object
-// (https://swagger.io/specification/#security-scheme-object)
-type SecurityScheme interface{}
+// Defines a security scheme that can be used to secure an agent's endpoints.
+// This is a discriminated union type based on the OpenAPI 3.0 Security Scheme Object.
+type SecurityScheme any
 
-// Base properties shared by all security schemes.
+// Defines base properties shared by all security scheme objects.
 type SecuritySchemeBase struct {
 	Description *string `json:"description,omitempty"`
 }
 
-// JSON-RPC request model for the 'message/send' method.
+// Represents a JSON-RPC request for the `message/send` method.
 type SendMessageRequest struct {
-	ID      interface{}       `json:"id"`
+	ID      any               `json:"id"`
 	JSONRPC string            `json:"jsonrpc"`
 	Method  string            `json:"method"`
 	Params  MessageSendParams `json:"params"`
 }
 
-// JSON-RPC response model for the 'message/send' method.
-type SendMessageResponse interface{}
+// Represents a JSON-RPC response for the `message/send` method.
+type SendMessageResponse any
 
-// JSON-RPC success response model for the 'message/send' method.
+// Represents a successful JSON-RPC response for the `message/send` method.
 type SendMessageSuccessResponse struct {
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  interface{} `json:"result"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Result  any    `json:"result"`
 }
 
-// JSON-RPC request model for the 'message/stream' method.
+// Represents a JSON-RPC request for the `message/stream` method.
 type SendStreamingMessageRequest struct {
-	ID      interface{}       `json:"id"`
+	ID      any               `json:"id"`
 	JSONRPC string            `json:"jsonrpc"`
 	Method  string            `json:"method"`
 	Params  MessageSendParams `json:"params"`
 }
 
-// JSON-RPC response model for the 'message/stream' method.
-type SendStreamingMessageResponse interface{}
+// Represents a JSON-RPC response for the `message/stream` method.
+type SendStreamingMessageResponse any
 
-// JSON-RPC success response model for the 'message/stream' method.
+// Represents a successful JSON-RPC response for the `message/stream` method.
+// The server may send multiple response objects for a single request.
 type SendStreamingMessageSuccessResponse struct {
-	ID      interface{} `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  interface{} `json:"result"`
+	ID      any    `json:"id"`
+	JSONRPC string `json:"jsonrpc"`
+	Result  any    `json:"result"`
 }
 
-// JSON-RPC request model for the 'tasks/pushNotificationConfig/set' method.
+// Represents a JSON-RPC request for the `tasks/pushNotificationConfig/set` method.
 type SetTaskPushNotificationConfigRequest struct {
-	ID      interface{}                `json:"id"`
+	ID      any                        `json:"id"`
 	JSONRPC string                     `json:"jsonrpc"`
 	Method  string                     `json:"method"`
 	Params  TaskPushNotificationConfig `json:"params"`
 }
 
-// JSON-RPC response for the 'tasks/pushNotificationConfig/set' method.
-type SetTaskPushNotificationConfigResponse interface{}
+// Represents a JSON-RPC response for the `tasks/pushNotificationConfig/set` method.
+type SetTaskPushNotificationConfigResponse any
 
-// JSON-RPC success response model for the 'tasks/pushNotificationConfig/set' method.
+// Represents a successful JSON-RPC response for the `tasks/pushNotificationConfig/set` method.
 type SetTaskPushNotificationConfigSuccessResponse struct {
-	ID      interface{}                `json:"id"`
+	ID      any                        `json:"id"`
 	JSONRPC string                     `json:"jsonrpc"`
 	Result  TaskPushNotificationConfig `json:"result"`
 }
 
+// Represents a single, stateful operation or conversation between a client and an agent.
 type Task struct {
-	Artifacts []Artifact             `json:"artifacts,omitempty"`
-	ContextID string                 `json:"contextId"`
-	History   []Message              `json:"history,omitempty"`
-	ID        string                 `json:"id"`
-	Kind      string                 `json:"kind"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-	Status    TaskStatus             `json:"status"`
+	Artifacts []Artifact     `json:"artifacts,omitempty"`
+	ContextID string         `json:"contextId"`
+	History   []Message      `json:"history,omitempty"`
+	ID        string         `json:"id"`
+	Kind      string         `json:"kind"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
+	Status    TaskStatus     `json:"status"`
 }
 
-// Sent by server during sendStream or subscribe requests
+// An event sent by the agent to notify the client that an artifact has been
+// generated or updated. This is typically used in streaming models.
 type TaskArtifactUpdateEvent struct {
-	Append    *bool                  `json:"append,omitempty"`
-	Artifact  Artifact               `json:"artifact"`
-	ContextID string                 `json:"contextId"`
-	Kind      string                 `json:"kind"`
-	LastChunk *bool                  `json:"lastChunk,omitempty"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-	TaskID    string                 `json:"taskId"`
+	Append    *bool          `json:"append,omitempty"`
+	Artifact  Artifact       `json:"artifact"`
+	ContextID string         `json:"contextId"`
+	Kind      string         `json:"kind"`
+	LastChunk *bool          `json:"lastChunk,omitempty"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
+	TaskID    string         `json:"taskId"`
 }
 
-// Parameters containing only a task ID, used for simple task operations.
+// Defines parameters containing a task ID, used for simple task operations.
 type TaskIdParams struct {
-	ID       string                 `json:"id"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	ID       string         `json:"id"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// A2A specific error indicating the task is in a state where it cannot be canceled.
+// An A2A-specific error indicating that the task is in a state where it cannot be canceled.
 type TaskNotCancelableError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// A2A specific error indicating the requested task ID was not found.
+// An A2A-specific error indicating that the requested task ID was not found.
 type TaskNotFoundError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }
 
-// Parameters for setting or getting push notification configuration for a task
+// A container associating a push notification configuration with a specific task.
 type TaskPushNotificationConfig struct {
 	PushNotificationConfig PushNotificationConfig `json:"pushNotificationConfig"`
 	TaskID                 string                 `json:"taskId"`
 }
 
-// Parameters for querying a task, including optional history length.
+// Defines parameters for querying a task, with an option to limit history length.
 type TaskQueryParams struct {
-	HistoryLength *int                   `json:"historyLength,omitempty"`
-	ID            string                 `json:"id"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	HistoryLength *int           `json:"historyLength,omitempty"`
+	ID            string         `json:"id"`
+	Metadata      map[string]any `json:"metadata,omitempty"`
 }
 
-// JSON-RPC request model for the 'tasks/resubscribe' method.
+// Represents a JSON-RPC request for the `tasks/resubscribe` method, used to resume a streaming connection.
 type TaskResubscriptionRequest struct {
-	ID      interface{}  `json:"id"`
+	ID      any          `json:"id"`
 	JSONRPC string       `json:"jsonrpc"`
 	Method  string       `json:"method"`
 	Params  TaskIdParams `json:"params"`
 }
 
-// TaskState and accompanying message.
+// Represents the status of a task at a specific point in time.
 type TaskStatus struct {
 	Message   *Message  `json:"message,omitempty"`
 	State     TaskState `json:"state"`
 	Timestamp *string   `json:"timestamp,omitempty"`
 }
 
-// Sent by server during sendStream or subscribe requests
+// An event sent by the agent to notify the client of a change in a task's status.
+// This is typically used in streaming or subscription models.
 type TaskStatusUpdateEvent struct {
-	ContextID string                 `json:"contextId"`
-	Final     bool                   `json:"final"`
-	Kind      string                 `json:"kind"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-	Status    TaskStatus             `json:"status"`
-	TaskID    string                 `json:"taskId"`
+	ContextID string         `json:"contextId"`
+	Final     bool           `json:"final"`
+	Kind      string         `json:"kind"`
+	Metadata  map[string]any `json:"metadata,omitempty"`
+	Status    TaskStatus     `json:"status"`
+	TaskID    string         `json:"taskId"`
 }
 
-// Represents a text segment within parts.
+// Represents a text segment within a message or artifact.
 type TextPart struct {
-	Kind     string                 `json:"kind"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-	Text     string                 `json:"text"`
+	Kind     string         `json:"kind"`
+	Metadata map[string]any `json:"metadata,omitempty"`
+	Text     string         `json:"text"`
 }
 
-// A2A specific error indicating the requested operation is not supported by the agent.
+// An A2A-specific error indicating that the requested operation is not supported by the agent.
 type UnsupportedOperationError struct {
-	Code    int          `json:"code"`
-	Data    *interface{} `json:"data,omitempty"`
-	Message string       `json:"message"`
+	Code    int    `json:"code"`
+	Data    *any   `json:"data,omitempty"`
+	Message string `json:"message"`
 }

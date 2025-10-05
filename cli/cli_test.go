@@ -19,7 +19,7 @@ import (
 
 // mockA2AClient implements the A2AClient interface for testing
 type mockA2AClient struct {
-	sendTaskStreamingFunc func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- interface{}) error
+	sendTaskStreamingFunc func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- any) error
 }
 
 func (m *mockA2AClient) GetAgentCard(ctx context.Context) (*adk.AgentCard, error) {
@@ -42,7 +42,7 @@ func (m *mockA2AClient) SendTask(ctx context.Context, params adk.MessageSendPara
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) SendTaskStreaming(ctx context.Context, params adk.MessageSendParams, eventChan chan<- interface{}) error {
+func (m *mockA2AClient) SendTaskStreaming(ctx context.Context, params adk.MessageSendParams, eventChan chan<- any) error {
 	if m.sendTaskStreamingFunc != nil {
 		return m.sendTaskStreamingFunc(ctx, params, eventChan)
 	}
@@ -75,7 +75,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 	logger = testLogger
 
 	mockClient := &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- interface{}) error {
+		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- any) error {
 			statusEvent := a2a.TaskStatusUpdateEvent{
 				Kind:      "status-update",
 				TaskID:    "test-task-123",
@@ -87,7 +87,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 						MessageID: "msg-123",
 						Role:      "assistant",
 						Parts: []a2a.Part{
-							map[string]interface{}{
+							map[string]any{
 								"kind": "text",
 								"text": "Test response",
 							},
@@ -105,7 +105,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 				Artifact: a2a.Artifact{
 					ArtifactID: "artifact-123",
 					Parts: []a2a.Part{
-						map[string]interface{}{
+						map[string]any{
 							"kind": "text",
 							"text": "Test artifact content",
 						},
@@ -125,7 +125,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 						MessageID: "msg-124",
 						Role:      "assistant",
 						Parts: []a2a.Part{
-							map[string]interface{}{
+							map[string]any{
 								"kind": "text",
 								"text": "Task completed",
 							},
@@ -135,7 +135,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 				Final: true,
 			}
 			eventChan <- finalStatusEvent
-			
+
 			return nil
 		},
 	}
@@ -148,7 +148,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.Flags().String("context-id", "", "Context ID for the task")
 	cmd.Flags().Bool("raw", false, "Show raw streaming event data")
-	
+
 	err := submitStreamingTaskCmd.RunE(cmd, []string{"test message"})
 
 	_ = w.Close()
@@ -191,7 +191,7 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 	logger = testLogger
 
 	mockClient := &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- interface{}) error {
+		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams, eventChan chan<- any) error {
 			statusEvent := a2a.TaskStatusUpdateEvent{
 				Kind:      "status-update",
 				TaskID:    "test-task-456",
@@ -202,7 +202,7 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 				Final: true,
 			}
 			eventChan <- statusEvent
-			
+
 			return nil
 		},
 	}
@@ -216,7 +216,7 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 	cmd.Flags().String("context-id", "", "Context ID for the task")
 	cmd.Flags().Bool("raw", true, "Show raw streaming event data")
 	_ = cmd.Flag("raw").Value.Set("true")
-	
+
 	err := submitStreamingTaskCmd.RunE(cmd, []string{"test message"})
 
 	_ = w.Close()

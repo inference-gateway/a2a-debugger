@@ -15,6 +15,7 @@ import (
 	cobra "github.com/spf13/cobra"
 	viper "github.com/spf13/viper"
 	zap "go.uber.org/zap"
+	yaml "gopkg.in/yaml.v3"
 )
 
 var (
@@ -65,6 +66,7 @@ func init() {
 	rootCmd.PersistentFlags().Duration("timeout", 30*time.Second, "Request timeout")
 	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug logging")
 	rootCmd.PersistentFlags().Bool("insecure", false, "Skip TLS verification")
+	rootCmd.PersistentFlags().StringP("output", "o", "yaml", "Output format (yaml|json)")
 
 	err := viper.BindPFlag("server-url", rootCmd.PersistentFlags().Lookup("server-url"))
 	if err != nil {
@@ -82,6 +84,11 @@ func init() {
 	}
 
 	err = viper.BindPFlag("insecure", rootCmd.PersistentFlags().Lookup("insecure"))
+	if err != nil {
+		log.Fatalf("bind error: %v", err)
+	}
+
+	err = viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
 	if err != nil {
 		log.Fatalf("bind error: %v", err)
 	}
@@ -196,77 +203,48 @@ func handleA2AError(err error, method string) error {
 	return err
 }
 
-// displayPart displays a message part with proper formatting based on its type
-func displayPart(part interface{}, partIndex int, prefix string) {
-	if partMap, ok := part.(map[string]interface{}); ok {
-		kind, kindExists := partMap["kind"]
-		if !kindExists {
-			fmt.Printf("%s%d. Unknown part (no kind field)\n", prefix, partIndex)
-			return
-		}
+// OutputFormat represents supported output formats
+type OutputFormat string
 
-		switch kind {
-		case "text":
-			if text, exists := partMap["text"]; exists {
-				fmt.Printf("%s%d. [Text] %v\n", prefix, partIndex, text)
-			} else {
-				fmt.Printf("%s%d. [Text] (no text content)\n", prefix, partIndex)
-			}
+const (
+	OutputFormatYAML OutputFormat = "yaml"
+	OutputFormatJSON OutputFormat = "json"
+)
 
-		case "data":
-			fmt.Printf("%s%d. [Data] ", prefix, partIndex)
-			if data, exists := partMap["data"]; exists {
-				// Pretty print the data content
-				if dataJSON, err := json.MarshalIndent(data, "", "  "); err == nil {
-					fmt.Printf("\n%s    %s\n", prefix, strings.ReplaceAll(string(dataJSON), "\n", "\n"+prefix+"    "))
-				} else {
-					fmt.Printf("%v\n", data)
-				}
-			} else {
-				fmt.Printf("(no data content)\n")
-			}
-
-		case "file":
-			fmt.Printf("%s%d. [File] ", prefix, partIndex)
-			if file, exists := partMap["file"]; exists {
-				if fileMap, ok := file.(map[string]interface{}); ok {
-					if name, exists := fileMap["name"]; exists {
-						fmt.Printf("Name: %v", name)
-					}
-					if mimeType, exists := fileMap["mimeType"]; exists {
-						fmt.Printf(" Type: %v", mimeType)
-					}
-					if uri, exists := fileMap["uri"]; exists {
-						fmt.Printf(" URI: %v", uri)
-					} else if bytes, exists := fileMap["bytes"]; exists {
-						if bytesStr, ok := bytes.(string); ok {
-							fmt.Printf(" Size: %d bytes", len(bytesStr))
-						}
-					}
-				}
-				fmt.Printf("\n")
-			} else {
-				fmt.Printf("(no file content)\n")
-			}
-
-		default:
-			fmt.Printf("%s%d. [%v] ", prefix, partIndex, kind)
-			// Try to display any content we can find
-			if text, exists := partMap["text"]; exists {
-				fmt.Printf("Text: %v\n", text)
-			} else if data, exists := partMap["data"]; exists {
-				if dataJSON, err := json.MarshalIndent(data, "", "  "); err == nil {
-					fmt.Printf("Data:\n%s    %s\n", prefix, strings.ReplaceAll(string(dataJSON), "\n", "\n"+prefix+"    "))
-				} else {
-					fmt.Printf("Data: %v\n", data)
-				}
-			} else {
-				fmt.Printf("(unknown content)\n")
-			}
-		}
-	} else {
-		fmt.Printf("%s%d. Invalid part format\n", prefix, partIndex)
+// getOutputFormat returns the configured output format
+func getOutputFormat() OutputFormat {
+	format := viper.GetString("output")
+	switch strings.ToLower(format) {
+	case "json":
+		return OutputFormatJSON
+	case "yaml":
+		return OutputFormatYAML
+	default:
+		return OutputFormatYAML // Default to YAML
 	}
+}
+
+// formatOutput formats the given data according to the specified format
+func formatOutput(data any) ([]byte, error) {
+	format := getOutputFormat()
+	switch format {
+	case OutputFormatJSON:
+		return json.MarshalIndent(data, "", "  ")
+	case OutputFormatYAML:
+		return yaml.Marshal(data)
+	default:
+		return yaml.Marshal(data)
+	}
+}
+
+// printFormatted outputs the data in the configured format
+func printFormatted(data any) error {
+	output, err := formatOutput(data)
+	if err != nil {
+		return fmt.Errorf("failed to format output: %w", err)
+	}
+	fmt.Print(string(output))
+	return nil
 }
 
 // Config namespace command
@@ -325,18 +303,7 @@ var configListCmd = &cobra.Command{
 	Long:  "List all configuration values from the A2A debugger config file.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		settings := viper.AllSettings()
-
-		if len(settings) == 0 {
-			fmt.Printf("No configuration found\n")
-			return nil
-		}
-
-		fmt.Printf("📋 Configuration:\n\n")
-		for key, value := range settings {
-			fmt.Printf("  %s = %v\n", key, value)
-		}
-
-		return nil
+		return printFormatted(settings)
 	},
 }
 
@@ -362,25 +329,12 @@ var connectCmd = &cobra.Command{
 			return fmt.Errorf("failed to connect to A2A server: %w", err)
 		}
 
-		fmt.Printf("✅ Successfully connected to A2A server!\n\n")
-		fmt.Printf("Agent Information:\n")
-		fmt.Printf("  Name: %s\n", agentCard.Name)
-		fmt.Printf("  Description: %s\n", agentCard.Description)
-		fmt.Printf("  Version: %s\n", agentCard.Version)
-		fmt.Printf("  URL: %s\n", agentCard.URL)
-
-		fmt.Printf("\nCapabilities:\n")
-		if agentCard.Capabilities.Streaming != nil {
-			fmt.Printf("  Streaming: %t\n", *agentCard.Capabilities.Streaming)
-		}
-		if agentCard.Capabilities.PushNotifications != nil {
-			fmt.Printf("  Push Notifications: %t\n", *agentCard.Capabilities.PushNotifications)
-		}
-		if agentCard.Capabilities.StateTransitionHistory != nil {
-			fmt.Printf("  State Transition History: %t\n", *agentCard.Capabilities.StateTransitionHistory)
+		output := map[string]any{
+			"connected": true,
+			"agent":     agentCard,
 		}
 
-		return nil
+		return printFormatted(output)
 	},
 }
 
@@ -428,56 +382,13 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
-		fmt.Printf("📋 Tasks (Total: %d, Showing: %d)\n\n", taskList.Total, len(taskList.Tasks))
-
-		if len(taskList.Tasks) == 0 {
-			fmt.Printf("No tasks found.\n")
-			return nil
+		output := map[string]any{
+			"tasks":   taskList.Tasks,
+			"total":   taskList.Total,
+			"showing": len(taskList.Tasks),
 		}
 
-		for i, task := range taskList.Tasks {
-			fmt.Printf("%d. Task ID: %s\n", i+1, task.ID)
-			fmt.Printf("   Context ID: %s\n", task.ContextID)
-			fmt.Printf("   Kind: %s\n", task.Kind)
-			fmt.Printf("   Status: %s\n", task.Status.State)
-			if task.Status.Message != nil {
-				fmt.Printf("   Message ID: %s\n", task.Status.Message.MessageID)
-				fmt.Printf("   Role: %s\n", task.Status.Message.Role)
-			}
-			if task.Status.Timestamp != nil {
-				fmt.Printf("   Timestamp: %s\n", *task.Status.Timestamp)
-			}
-			
-			if len(task.Artifacts) > 0 {
-				fmt.Printf("   Artifacts (%d):\n", len(task.Artifacts))
-				for j, artifact := range task.Artifacts {
-					fmt.Printf("     %d. ID: %s", j+1, artifact.ArtifactID)
-					if artifact.Name != nil {
-						fmt.Printf(" | Name: %s", *artifact.Name)
-					}
-					if artifact.Description != nil {
-						fmt.Printf(" | Description: %s", *artifact.Description)
-					}
-					fmt.Printf(" | Parts: %d", len(artifact.Parts))
-					fmt.Printf("\n")
-				}
-			} else {
-				fmt.Printf("   Artifacts: None\n")
-			}
-			
-			if len(task.Metadata) > 0 {
-				fmt.Printf("   Metadata:\n")
-				for key, value := range task.Metadata {
-					fmt.Printf("     %s: %v\n", key, value)
-				}
-			} else {
-				fmt.Printf("   Metadata: None\n")
-			}
-			
-			fmt.Printf("\n")
-		}
-
-		return nil
+		return printFormatted(output)
 	},
 }
 
@@ -519,33 +430,7 @@ var getTaskCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task: %w", err)
 		}
 
-		fmt.Printf("🔍 Task Details\n\n")
-		fmt.Printf("ID: %s\n", task.ID)
-		fmt.Printf("Context ID: %s\n", task.ContextID)
-		fmt.Printf("Status: %s\n", task.Status.State)
-
-		if task.Status.Message != nil {
-			fmt.Printf("\nCurrent Message:\n")
-			fmt.Printf("  Message ID: %s\n", task.Status.Message.MessageID)
-			fmt.Printf("  Role: %s\n", task.Status.Message.Role)
-			fmt.Printf("  Parts: %d\n", len(task.Status.Message.Parts))
-
-			for i, part := range task.Status.Message.Parts {
-				displayPart(part, i+1, "    ")
-			}
-		}
-
-		if len(task.History) > 0 {
-			fmt.Printf("\nConversation History (%d messages):\n", len(task.History))
-			for i, msg := range task.History {
-				fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.MessageID)
-				for j, part := range msg.Parts {
-					displayPart(part, j+1, "     ")
-				}
-			}
-		}
-
-		return nil
+		return printFormatted(task)
 	},
 }
 
@@ -581,35 +466,12 @@ var historyCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
-		if len(taskList.Tasks) == 0 {
-			fmt.Printf("No conversation history found for context: %s\n", contextID)
-			return nil
+		output := map[string]any{
+			"context_id": contextID,
+			"tasks":      taskList.Tasks,
 		}
 
-		fmt.Printf("💬 Conversation History for Context: %s\n\n", contextID)
-
-		for _, task := range taskList.Tasks {
-			fmt.Printf("Task: %s (Status: %s)\n", task.ID, task.Status.State)
-
-			if len(task.History) > 0 {
-				for i, msg := range task.History {
-					fmt.Printf("  %d. [%s] %s\n", i+1, msg.Role, msg.MessageID)
-					for j, part := range msg.Parts {
-						displayPart(part, j+1, "     ")
-					}
-				}
-			}
-
-			if task.Status.Message != nil {
-				fmt.Printf("  Current: [%s] %s\n", task.Status.Message.Role, task.Status.Message.MessageID)
-				for j, part := range task.Status.Message.Parts {
-					displayPart(part, j+1, "     ")
-				}
-			}
-			fmt.Printf("\n")
-		}
-
-		return nil
+		return printFormatted(output)
 	},
 }
 
@@ -628,15 +490,7 @@ var agentCardCmd = &cobra.Command{
 			return handleA2AError(err, "agent-card")
 		}
 
-		agentCardJSON, err := json.MarshalIndent(agentCard, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal agent card: %w", err)
-		}
-
-		fmt.Printf("🤖 Agent Card\n\n")
-		fmt.Printf("%s\n", agentCardJSON)
-
-		return nil
+		return printFormatted(agentCard)
 	},
 }
 
@@ -644,11 +498,14 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
 	Long:  "Display version information including version number, commit hash, and build date.",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("A2A Debugger\n")
-		fmt.Printf("Version:    %s\n", appVersion)
-		fmt.Printf("Commit:     %s\n", buildCommit)
-		fmt.Printf("Built:      %s\n", buildDate)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		version := map[string]any{
+			"name":    "A2A Debugger",
+			"version": appVersion,
+			"commit":  buildCommit,
+			"built":   buildDate,
+		}
+		return printFormatted(version)
 	},
 }
 
@@ -673,7 +530,7 @@ var submitTaskCmd = &cobra.Command{
 				MessageID: messageID,
 				Role:      "user",
 				Parts: []adk.Part{
-					map[string]interface{}{
+					map[string]any{
 						"kind": "text",
 						"text": message,
 					},
@@ -706,14 +563,13 @@ var submitTaskCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task: %w", err)
 		}
 
-		fmt.Printf("✅ Task submitted successfully!\n\n")
-		fmt.Printf("Task Details:\n")
-		fmt.Printf("  Task ID: %s\n", task.ID)
-		fmt.Printf("  Context ID: %s\n", task.ContextID)
-		fmt.Printf("  Status: %s\n", task.Status.State)
-		fmt.Printf("  Message ID: %s\n", messageID)
+		output := map[string]any{
+			"submitted":  true,
+			"message_id": messageID,
+			"task":       task,
+		}
 
-		return nil
+		return printFormatted(output)
 	},
 }
 
@@ -740,7 +596,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				MessageID: messageID,
 				Role:      "user",
 				Parts: []adk.Part{
-					map[string]interface{}{
+					map[string]any{
 						"kind": "text",
 						"text": message,
 					},
@@ -758,7 +614,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 		logger.Debug("submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
 
-		eventChan := make(chan interface{}, 100)
+		eventChan := make(chan any, 100)
 
 		go func() {
 			defer close(eventChan)
@@ -776,13 +632,13 @@ var submitStreamingTaskCmd = &cobra.Command{
 		fmt.Printf("\n🔄 Streaming responses:\n\n")
 
 		var streamingSummary struct {
-			TaskID            string
-			ContextID         string
-			FinalStatus       string
-			StatusUpdates     int
-			ArtifactUpdates   int
-			TotalEvents       int
-			FinalMessage      *adk.Message
+			TaskID          string
+			ContextID       string
+			FinalStatus     string
+			StatusUpdates   int
+			ArtifactUpdates int
+			TotalEvents     int
+			FinalMessage    *adk.Message
 		}
 
 		for event := range eventChan {
@@ -794,7 +650,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				continue
 			}
 
-			var genericEvent map[string]interface{}
+			var genericEvent map[string]any
 			if err := json.Unmarshal(eventJSON, &genericEvent); err != nil {
 				logger.Error("Failed to unmarshal generic event", zap.Error(err))
 				continue
@@ -819,7 +675,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 							for i, part := range statusEvent.Status.Message.Parts {
 								adkParts[i] = adk.Part(part)
 							}
-							
+
 							adkMessage := &adk.Message{
 								Kind:      statusEvent.Status.Message.Kind,
 								MessageID: statusEvent.Status.Message.MessageID,
@@ -877,7 +733,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 					if statusEvent.Status.Message != nil && len(statusEvent.Status.Message.Parts) > 0 {
 						fmt.Printf("\n💬 Agent Response:\n")
 						for _, part := range statusEvent.Status.Message.Parts {
-							if partMap, ok := part.(map[string]interface{}); ok {
+							if partMap, ok := part.(map[string]any); ok {
 								if kind, ok := partMap["kind"].(string); ok && kind == "text" {
 									if text, ok := partMap["text"].(string); ok {
 										fmt.Printf("%s\n", text)
@@ -906,7 +762,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 					if len(artifactEvent.Artifact.Parts) > 0 {
 						fmt.Printf("  Parts:\n")
 						for i, part := range artifactEvent.Artifact.Parts {
-							if partMap, ok := part.(map[string]interface{}); ok {
+							if partMap, ok := part.(map[string]any); ok {
 								if kind, exists := partMap["kind"]; exists {
 									fmt.Printf("    Part %d: [%v]", i+1, kind)
 									if text, exists := partMap["text"]; exists {

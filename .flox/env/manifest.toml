@@ -2,7 +2,13 @@ version = 1
 
 [install]
 go.pkg-path = "go"
-go.version = "^1.24"
+go.version = "^1.25"
+
+go-task.pkg-path = "go-task"
+go-task.version = "^3.45.4"
+
+claude-code.pkg-path = "claude-code"
+claude-code.version = "^2.0.1"
 
 [hook]
 on-activate = """

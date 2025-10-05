@@ -33,6 +33,7 @@ A powerful command-line utility for debugging, monitoring, and inspecting A2A se
 - **Flexible Configuration**: Support for configuration files and environment variables
 - **Debug Logging**: Comprehensive logging with configurable verbosity levels
 - **Namespace Commands**: Organized command structure with `config` and `tasks` namespaces
+- **Multiple Output Formats**: Support for YAML (default) and JSON output formats for structured data
 
 ## 📦 Installation
 
@@ -148,6 +149,7 @@ server-url: http://localhost:8080
 timeout: 30s
 debug: false
 insecure: false
+output: yaml  # or json
 ```
 
 ### Command Options
@@ -159,6 +161,7 @@ insecure: false
 - `--debug`: Enable debug logging
 - `--insecure`: Skip TLS verification
 - `--config`: Config file path
+- `--output, -o`: Output format (yaml|json) (default: yaml)
 
 #### Task List Options
 
@@ -268,11 +271,66 @@ Task: task-abc123 (Status: completed)
      1: Hello! How can I help you today?
 ```
 
+#### Output Formats
+
+By default, all commands output structured data in YAML format. You can switch to JSON using the `-o` flag:
+
+```bash
+# YAML output (default)
+$ a2a tasks list --limit 2
+tasks:
+  - id: task-abc123
+    context_id: ctx-xyz789
+    kind: task
+    status:
+      state: completed
+      message:
+        message_id: msg-456
+        role: assistant
+    artifacts: []
+    metadata: {}
+  - id: task-def456
+    context_id: ctx-uvw123
+    kind: task
+    status:
+      state: working
+      message:
+        message_id: msg-789
+        role: user
+    artifacts: []
+    metadata: {}
+total: 23
+showing: 2
+
+# JSON output
+$ a2a tasks list --limit 2 -o json
+{
+  "tasks": [
+    {
+      "id": "task-abc123",
+      "context_id": "ctx-xyz789",
+      "kind": "task",
+      "status": {
+        "state": "completed",
+        "message": {
+          "message_id": "msg-456",
+          "role": "assistant"
+        }
+      },
+      "artifacts": [],
+      "metadata": {}
+    }
+  ],
+  "total": 23,
+  "showing": 2
+}
+```
+
 ## 🛠️ Development
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go 1.25 or later
 - [Task](https://taskfile.dev/) for build automation
 
 ### Available Tasks
