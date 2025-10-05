@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.6.1...v0.7.0) (2025-10-05)
+
+### ✨ Features
+
+* **cli:** Add YAML and JSON output format support ([#15](https://github.com/inference-gateway/a2a-debugger/issues/15)) ([a9a54a2](https://github.com/inference-gateway/a2a-debugger/commit/a9a54a28ba14cd6bc8129d888effc3ea12726f67)), closes [#14](https://github.com/inference-gateway/a2a-debugger/issues/14)
+
 ## [0.6.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.6.0...v0.6.1) (2025-10-03)
 
 ### ♻️ Improvements
