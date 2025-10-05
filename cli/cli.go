@@ -247,7 +247,6 @@ func printFormatted(data interface{}) error {
 	return nil
 }
 
-
 // Config namespace command
 var configCmd = &cobra.Command{
 	Use:   "config",
@@ -330,10 +329,9 @@ var connectCmd = &cobra.Command{
 			return fmt.Errorf("failed to connect to A2A server: %w", err)
 		}
 
-		// Create structured output with connection status
 		output := map[string]interface{}{
 			"connected": true,
-			"agent": agentCard,
+			"agent":     agentCard,
 		}
 
 		return printFormatted(output)
@@ -384,10 +382,9 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
-		// Create structured output
 		output := map[string]interface{}{
-			"tasks": taskList.Tasks,
-			"total": taskList.Total,
+			"tasks":   taskList.Tasks,
+			"total":   taskList.Total,
 			"showing": len(taskList.Tasks),
 		}
 
@@ -469,10 +466,9 @@ var historyCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
-		// Create structured output
 		output := map[string]interface{}{
 			"context_id": contextID,
-			"tasks": taskList.Tasks,
+			"tasks":      taskList.Tasks,
 		}
 
 		return printFormatted(output)
@@ -504,10 +500,10 @@ var versionCmd = &cobra.Command{
 	Long:  "Display version information including version number, commit hash, and build date.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		version := map[string]interface{}{
-			"name": "A2A Debugger",
+			"name":    "A2A Debugger",
 			"version": appVersion,
-			"commit": buildCommit,
-			"built": buildDate,
+			"commit":  buildCommit,
+			"built":   buildDate,
 		}
 		return printFormatted(version)
 	},
@@ -567,11 +563,10 @@ var submitTaskCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task: %w", err)
 		}
 
-		// Create structured output
 		output := map[string]interface{}{
-			"submitted": true,
+			"submitted":  true,
 			"message_id": messageID,
-			"task": task,
+			"task":       task,
 		}
 
 		return printFormatted(output)
@@ -637,13 +632,13 @@ var submitStreamingTaskCmd = &cobra.Command{
 		fmt.Printf("\n🔄 Streaming responses:\n\n")
 
 		var streamingSummary struct {
-			TaskID            string
-			ContextID         string
-			FinalStatus       string
-			StatusUpdates     int
-			ArtifactUpdates   int
-			TotalEvents       int
-			FinalMessage      *adk.Message
+			TaskID          string
+			ContextID       string
+			FinalStatus     string
+			StatusUpdates   int
+			ArtifactUpdates int
+			TotalEvents     int
+			FinalMessage    *adk.Message
 		}
 
 		for event := range eventChan {
@@ -680,7 +675,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 							for i, part := range statusEvent.Status.Message.Parts {
 								adkParts[i] = adk.Part(part)
 							}
-							
+
 							adkMessage := &adk.Message{
 								Kind:      statusEvent.Status.Message.Kind,
 								MessageID: statusEvent.Status.Message.MessageID,
