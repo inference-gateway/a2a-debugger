@@ -24,6 +24,7 @@ A powerful command-line utility for debugging, monitoring, and inspecting A2A se
 ## 🚀 Features
 
 - **Server Connectivity**: Test connections to A2A servers and retrieve agent information
+- **Interactive Mode**: Chat interface with streaming and background modes using Bubble Tea UI
 - **Task Management**: List, filter, and inspect tasks with detailed status information
 - **Real-time Streaming**: Submit streaming tasks and monitor real-time agent responses
 - **Streaming Summaries**: Summaries with Task IDs, durations, and event counts
@@ -98,6 +99,12 @@ List all tasks:
 a2a tasks list
 ```
 
+Start interactive chat mode:
+
+```bash
+a2a interactive
+```
+
 Get specific task details:
 
 ```bash
@@ -130,6 +137,12 @@ a2a tasks get <task-id>            # Get detailed task information
 a2a tasks history <context-id>     # Get conversation history for a context
 a2a tasks submit <message>         # Submit a task and get response
 a2a tasks submit-streaming <msg>   # Submit streaming task with real-time responses and summary
+```
+
+#### Interactive Mode
+
+```bash
+a2a interactive                 # Start interactive chat mode with A2A server
 ```
 
 #### Server Commands
@@ -170,6 +183,45 @@ insecure: false
 #### Task Get Options
 
 - `--history-length`: Number of history messages to include
+
+### Interactive Mode
+
+The interactive mode provides a chat-like interface for communicating with A2A agents in real-time:
+
+```bash
+a2a interactive
+```
+
+**Features:**
+- **Dual Modes**: Switch between Streaming (realtime) and Background (long running tasks) modes
+- **Live Chat**: Type messages and get real-time responses
+- **Bubble Tea UI**: Clean terminal interface with message history and status updates
+- **Mode Switching**: Press Tab to switch between streaming and background modes
+- **Auto-scrolling**: Message history automatically scrolls to show latest messages
+- **Error Handling**: Clear error messages and connection status
+
+**Controls:**
+- Type your message and press **Enter** to send
+- Press **Tab** to switch between streaming/background modes
+- Press **Ctrl+C** to quit
+
+**Example Session:**
+```
+🤖 A2A Interactive Chat - Streaming Mode
+
+Context ID: ctx-1725670123
+
+ℹ️  🚀 Interactive A2A Chat Session Started
+ℹ️  📡 Mode: Streaming (realtime) 
+ℹ️  💬 Type your message and press Enter to send
+ℹ️  ⌨️  Press Tab to switch modes, Ctrl+C to quit
+👤 You: Hello, can you help me with my project?
+🤖 Agent: Hello! I'd be happy to help you with your project. What kind of project are you working on?
+
+Interactive Mode - Press Tab to switch modes, Ctrl+C to quit
+
+💬 Hello, can you help me debug this code?
+```
 
 ### Examples
 
