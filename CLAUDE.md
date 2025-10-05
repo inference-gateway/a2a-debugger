@@ -114,7 +114,7 @@ task build:docker
 - **CLI Framework**: `github.com/spf13/cobra` + `github.com/spf13/viper`
 - **A2A SDK**: `github.com/inference-gateway/a2a`
 - **Logging**: `go.uber.org/zap`
-- **Go Version**: 1.24+
+- **Go Version**: 1.25+
 
 ## Development Guidelines
 

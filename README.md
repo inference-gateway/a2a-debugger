@@ -330,7 +330,7 @@ $ a2a tasks list --limit 2 -o json
 
 ### Prerequisites
 
-- Go 1.24 or later
+- Go 1.25 or later
 - [Task](https://taskfile.dev/) for build automation
 
 ### Available Tasks
