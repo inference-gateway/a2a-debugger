@@ -2,10 +2,12 @@ package cli
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -103,8 +105,11 @@ func init() {
 	tasksCmd.AddCommand(submitTaskCmd)
 	tasksCmd.AddCommand(submitStreamingTaskCmd)
 
+	artifactsCmd.AddCommand(downloadArtifactsCmd)
+
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(tasksCmd)
+	rootCmd.AddCommand(artifactsCmd)
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(agentCardCmd)
 	rootCmd.AddCommand(versionCmd)
@@ -119,6 +124,13 @@ func init() {
 	submitStreamingTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
 	submitStreamingTaskCmd.Flags().String("task-id", "", "Task ID to resume (optional)")
 	submitStreamingTaskCmd.Flags().Bool("raw", false, "Show raw streaming event data instead of formatted output")
+	downloadArtifactsCmd.Flags().String("task-id", "", "Task ID to download artifacts from (required)")
+	downloadArtifactsCmd.Flags().String("artifact-id", "", "Specific artifact ID to download (optional, downloads all if not specified)")
+	downloadArtifactsCmd.Flags().StringP("output", "o", "./downloads", "Output directory for downloaded artifacts")
+	err = downloadArtifactsCmd.MarkFlagRequired("task-id")
+	if err != nil {
+		log.Fatalf("mark flag required error: %v", err)
+	}
 }
 
 func initConfig() {
@@ -312,6 +324,13 @@ var tasksCmd = &cobra.Command{
 	Use:   "tasks",
 	Short: "Task management commands",
 	Long:  "Commands for managing and inspecting A2A tasks.",
+}
+
+// Artifacts namespace command
+var artifactsCmd = &cobra.Command{
+	Use:   "artifacts",
+	Short: "Artifact management commands",
+	Long:  "Commands for downloading and managing A2A task artifacts.",
 }
 
 var connectCmd = &cobra.Command{
@@ -801,6 +820,207 @@ var submitStreamingTaskCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\n")
+		return nil
+	},
+}
+
+var downloadArtifactsCmd = &cobra.Command{
+	Use:   "download",
+	Short: "Download artifacts from a specific task",
+	Long:  "Downloads artifacts from a specific task using the task ID. Optionally download only a specific artifact by ID.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		ensureA2AClient()
+
+		taskID, _ := cmd.Flags().GetString("task-id")
+		artifactID, _ := cmd.Flags().GetString("artifact-id")
+		outputDir, _ := cmd.Flags().GetString("output")
+
+		logger.Debug("Downloading artifacts", zap.String("task_id", taskID), zap.String("artifact_id", artifactID), zap.String("output_dir", outputDir))
+
+		// Get the task to retrieve its artifacts
+		params := adk.TaskQueryParams{
+			ID: taskID,
+		}
+
+		resp, err := a2aClient.GetTask(ctx, params)
+		if err != nil {
+			return handleA2AError(err, "tasks/get")
+		}
+
+		resultBytes, err := json.Marshal(resp.Result)
+		if err != nil {
+			return fmt.Errorf("failed to marshal response: %w", err)
+		}
+
+		var task adk.Task
+		if err := json.Unmarshal(resultBytes, &task); err != nil {
+			return fmt.Errorf("failed to unmarshal task: %w", err)
+		}
+
+		// Check if task has artifacts
+		if len(task.Artifacts) == 0 {
+			fmt.Printf("⚠️  No artifacts found for task ID: %s\n", taskID)
+			return nil
+		}
+
+		// Create output directory if it doesn't exist
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			return fmt.Errorf("failed to create output directory: %w", err)
+		}
+
+		// Filter artifacts if specific artifact ID is provided
+		var artifactsToDownload []adk.Artifact
+		if artifactID != "" {
+			for _, artifact := range task.Artifacts {
+				if artifact.ArtifactID == artifactID {
+					artifactsToDownload = append(artifactsToDownload, artifact)
+					break
+				}
+			}
+			if len(artifactsToDownload) == 0 {
+				return fmt.Errorf("artifact with ID '%s' not found in task '%s'", artifactID, taskID)
+			}
+		} else {
+			artifactsToDownload = task.Artifacts
+		}
+
+		fmt.Printf("📦 Found %d artifact(s) to download from task %s\n\n", len(artifactsToDownload), taskID)
+
+		downloadedCount := 0
+		for _, artifact := range artifactsToDownload {
+			fmt.Printf("🔽 Downloading artifact: %s\n", artifact.ArtifactID)
+			if artifact.Name != nil {
+				fmt.Printf("   Name: %s\n", *artifact.Name)
+			}
+			if artifact.Description != nil {
+				fmt.Printf("   Description: %s\n", *artifact.Description)
+			}
+
+			// Create artifact directory
+			artifactDir := filepath.Join(outputDir, artifact.ArtifactID)
+			if err := os.MkdirAll(artifactDir, 0755); err != nil {
+				fmt.Printf("❌ Failed to create artifact directory %s: %v\n", artifactDir, err)
+				continue
+			}
+
+			// Process each part of the artifact
+			partCount := 0
+			for i, part := range artifact.Parts {
+				partMap, ok := part.(map[string]any)
+				if !ok {
+					fmt.Printf("⚠️  Skipping part %d: invalid format\n", i+1)
+					continue
+				}
+
+				kind, exists := partMap["kind"].(string)
+				if !exists {
+					fmt.Printf("⚠️  Skipping part %d: no kind specified\n", i+1)
+					continue
+				}
+
+				switch kind {
+				case "text":
+					if text, ok := partMap["text"].(string); ok {
+						filename := fmt.Sprintf("part_%d.txt", i+1)
+						if name, exists := partMap["name"].(string); exists && name != "" {
+							filename = name
+							if !strings.HasSuffix(strings.ToLower(filename), ".txt") {
+								filename += ".txt"
+							}
+						}
+						
+						filePath := filepath.Join(artifactDir, filename)
+						if err := os.WriteFile(filePath, []byte(text), 0644); err != nil {
+							fmt.Printf("❌ Failed to write text part to %s: %v\n", filePath, err)
+							continue
+						}
+						fmt.Printf("   ✅ Saved text part: %s\n", filename)
+						partCount++
+					}
+
+				case "file":
+					filename := fmt.Sprintf("part_%d_file", i+1)
+					if name, exists := partMap["name"].(string); exists && name != "" {
+						filename = name
+					}
+
+					// Handle file content (could be base64 encoded or direct content)
+					var content []byte
+					if data, exists := partMap["data"].(string); exists {
+						// Assume base64 encoded content
+						decoded, err := base64.StdEncoding.DecodeString(data)
+						if err != nil {
+							// If base64 decode fails, treat as plain text
+							content = []byte(data)
+						} else {
+							content = decoded
+						}
+					} else if text, exists := partMap["text"].(string); exists {
+						content = []byte(text)
+					} else {
+						fmt.Printf("⚠️  Skipping file part %d: no content found\n", i+1)
+						continue
+					}
+
+					filePath := filepath.Join(artifactDir, filename)
+					if err := os.WriteFile(filePath, content, 0644); err != nil {
+						fmt.Printf("❌ Failed to write file part to %s: %v\n", filePath, err)
+						continue
+					}
+					fmt.Printf("   ✅ Saved file part: %s\n", filename)
+					partCount++
+
+				case "data":
+					// Handle structured data (JSON)
+					filename := fmt.Sprintf("part_%d.json", i+1)
+					if name, exists := partMap["name"].(string); exists && name != "" {
+						filename = name
+						if !strings.HasSuffix(strings.ToLower(filename), ".json") {
+							filename += ".json"
+						}
+					}
+
+					var dataContent []byte
+					if data, exists := partMap["data"]; exists {
+						dataContent, err = json.MarshalIndent(data, "", "  ")
+						if err != nil {
+							fmt.Printf("❌ Failed to marshal data part %d: %v\n", i+1, err)
+							continue
+						}
+					} else {
+						fmt.Printf("⚠️  Skipping data part %d: no data found\n", i+1)
+						continue
+					}
+
+					filePath := filepath.Join(artifactDir, filename)
+					if err := os.WriteFile(filePath, dataContent, 0644); err != nil {
+						fmt.Printf("❌ Failed to write data part to %s: %v\n", filePath, err)
+						continue
+					}
+					fmt.Printf("   ✅ Saved data part: %s\n", filename)
+					partCount++
+
+				default:
+					fmt.Printf("⚠️  Skipping part %d: unsupported kind '%s'\n", i+1, kind)
+				}
+			}
+
+			if partCount > 0 {
+				fmt.Printf("   📂 Artifact saved to: %s (%d parts)\n", artifactDir, partCount)
+				downloadedCount++
+			} else {
+				fmt.Printf("   ⚠️  No parts could be downloaded for this artifact\n")
+			}
+			fmt.Println()
+		}
+
+		if downloadedCount > 0 {
+			fmt.Printf("✅ Successfully downloaded %d artifact(s) to %s\n", downloadedCount, outputDir)
+		} else {
+			fmt.Printf("❌ No artifacts were successfully downloaded\n")
+		}
+
 		return nil
 	},
 }
