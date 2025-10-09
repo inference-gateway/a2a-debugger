@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.7.0...v0.8.0) (2025-10-09)
+
+### ✨ Features
+
+* **tasks:** Add --include-artifacts flag to tasks list command ([#21](https://github.com/inference-gateway/a2a-debugger/issues/21)) ([1e91d73](https://github.com/inference-gateway/a2a-debugger/commit/1e91d73fb363d8e553ecaeb16fdd4adca52d5b6b)), closes [#18](https://github.com/inference-gateway/a2a-debugger/issues/18)
+* **tasks:** Add --include-history flag to tasks list command ([#20](https://github.com/inference-gateway/a2a-debugger/issues/20)) ([6c9826f](https://github.com/inference-gateway/a2a-debugger/commit/6c9826f5d0ea93299b4713cd4057e6e8f071153c)), closes [#19](https://github.com/inference-gateway/a2a-debugger/issues/19)
+
+### 🔧 Miscellaneous
+
+* **deps:** Update create-github-app-token action to v2.1.4 ([f5afc25](https://github.com/inference-gateway/a2a-debugger/commit/f5afc2595652e7b1d6b30243dbf8bf7d48f3d2ac))
+
 ## [0.7.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.6.1...v0.7.0) (2025-10-05)
 
 ### ✨ Features
