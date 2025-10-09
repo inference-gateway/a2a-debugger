@@ -114,6 +114,7 @@ func init() {
 	listTasksCmd.Flags().Int("limit", 50, "Maximum number of tasks to return")
 	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
 	listTasksCmd.Flags().Bool("include-history", false, "Include conversation history in the output")
+	listTasksCmd.Flags().Bool("include-artifacts", false, "Include artifacts in the output")
 	getTaskCmd.Flags().Int("history-length", 0, "Number of history messages to include")
 	submitTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
 	submitTaskCmd.Flags().String("task-id", "", "Task ID to resume (optional)")
@@ -352,6 +353,7 @@ var listTasksCmd = &cobra.Command{
 		limit, _ := cmd.Flags().GetInt("limit")
 		offset, _ := cmd.Flags().GetInt("offset")
 		includeHistory, _ := cmd.Flags().GetBool("include-history")
+		includeArtifacts, _ := cmd.Flags().GetBool("include-artifacts")
 
 		params := adk.TaskListParams{
 			Limit:  limit,
@@ -385,7 +387,7 @@ var listTasksCmd = &cobra.Command{
 		}
 
 		tasks := taskList.Tasks
-		if !includeHistory {
+		if !includeHistory || !includeArtifacts {
 			var filteredTasks []adk.Task
 			for _, task := range tasks {
 				filteredTask := adk.Task{
@@ -393,8 +395,13 @@ var listTasksCmd = &cobra.Command{
 					Kind:      task.Kind,
 					ContextID: task.ContextID,
 					Status:    task.Status,
-					Artifacts: task.Artifacts,
 					Metadata:  task.Metadata,
+				}
+				if includeArtifacts {
+					filteredTask.Artifacts = task.Artifacts
+				}
+				if includeHistory {
+					filteredTask.History = task.History
 				}
 				filteredTasks = append(filteredTasks, filteredTask)
 			}
