@@ -384,13 +384,10 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
-		// Filter out history if not requested
 		tasks := taskList.Tasks
 		if !includeHistory {
-			// Create new slice with tasks that have history removed
 			var filteredTasks []adk.Task
 			for _, task := range tasks {
-				// Create a copy of the task without history
 				filteredTask := adk.Task{
 					ID:        task.ID,
 					Kind:      task.Kind,
@@ -398,7 +395,6 @@ var listTasksCmd = &cobra.Command{
 					Status:    task.Status,
 					Artifacts: task.Artifacts,
 					Metadata:  task.Metadata,
-					// History is intentionally omitted
 				}
 				filteredTasks = append(filteredTasks, filteredTask)
 			}
