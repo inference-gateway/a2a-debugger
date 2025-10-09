@@ -118,6 +118,8 @@ func init() {
 	listTasksCmd.Flags().String("context-id", "", "Filter by context ID")
 	listTasksCmd.Flags().Int("limit", 50, "Maximum number of tasks to return")
 	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
+	listTasksCmd.Flags().Bool("include-history", false, "Include conversation history in the output")
+	listTasksCmd.Flags().Bool("include-artifacts", false, "Include artifacts in the output")
 	getTaskCmd.Flags().Int("history-length", 0, "Number of history messages to include")
 	submitTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
 	submitTaskCmd.Flags().String("task-id", "", "Task ID to resume (optional)")
@@ -369,6 +371,8 @@ var listTasksCmd = &cobra.Command{
 		contextID, _ := cmd.Flags().GetString("context-id")
 		limit, _ := cmd.Flags().GetInt("limit")
 		offset, _ := cmd.Flags().GetInt("offset")
+		includeHistory, _ := cmd.Flags().GetBool("include-history")
+		includeArtifacts, _ := cmd.Flags().GetBool("include-artifacts")
 
 		params := adk.TaskListParams{
 			Limit:  limit,
@@ -401,10 +405,32 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
+		tasks := taskList.Tasks
+		if !includeHistory || !includeArtifacts {
+			var filteredTasks []adk.Task
+			for _, task := range tasks {
+				filteredTask := adk.Task{
+					ID:        task.ID,
+					Kind:      task.Kind,
+					ContextID: task.ContextID,
+					Status:    task.Status,
+					Metadata:  task.Metadata,
+				}
+				if includeArtifacts {
+					filteredTask.Artifacts = task.Artifacts
+				}
+				if includeHistory {
+					filteredTask.History = task.History
+				}
+				filteredTasks = append(filteredTasks, filteredTask)
+			}
+			tasks = filteredTasks
+		}
+
 		output := map[string]any{
-			"tasks":   taskList.Tasks,
+			"tasks":   tasks,
 			"total":   taskList.Total,
-			"showing": len(taskList.Tasks),
+			"showing": len(tasks),
 		}
 
 		return printFormatted(output)
