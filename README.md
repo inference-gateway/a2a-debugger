@@ -169,6 +169,7 @@ output: yaml  # or json
 - `--context-id`: Filter by context ID
 - `--limit`: Maximum number of tasks to return (default: 50)
 - `--offset`: Number of tasks to skip (default: 0)
+- `--include-history`: Include conversation history in the output (default: false)
 
 #### Task Get Options
 
@@ -236,6 +237,18 @@ $ a2a tasks list --state working --limit 5
    Status: working
    Message ID: msg-789
    Role: user
+```
+
+#### Include conversation history in task list
+
+By default, `tasks list` excludes conversation history to keep output manageable. Use `--include-history` to show complete task data:
+
+```bash
+# Without history (default - cleaner output)
+$ a2a tasks list --limit 1
+
+# With history (complete task data including conversation)
+$ a2a tasks list --limit 1 --include-history
 ```
 
 #### View detailed task information
