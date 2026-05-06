@@ -20,9 +20,9 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
-      - name: Install Task
+      - name: Install task
         run: |
-          curl -s https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin v3.45.4
+          curl -s https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin v3.48.0
 
       - name: Install golangci-lint
         run: |
