@@ -9,12 +9,13 @@ import (
 	"strings"
 	"time"
 
-	client "github.com/inference-gateway/adk/client"
-	adk "github.com/inference-gateway/adk/types"
 	cobra "github.com/spf13/cobra"
 	viper "github.com/spf13/viper"
 	zap "go.uber.org/zap"
 	yaml "gopkg.in/yaml.v3"
+
+	client "github.com/inference-gateway/adk/client"
+	adk "github.com/inference-gateway/adk/types"
 )
 
 var (
