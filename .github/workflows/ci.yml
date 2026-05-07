@@ -32,9 +32,6 @@ jobs:
         run: |
           go install github.com/maxbrunsfeld/counterfeiter/v6@v6.11.2
 
-      - name: Generate
-        run: task generate
-
       - name: Run Tidy
         run: task tidy
 

@@ -14,14 +14,9 @@ A2A Debugger is a CLI tool for debugging and monitoring A2A (Agent-to-Agent) ser
 
 ## Architecture
 
-### Code Generation
+### A2A Types
 
-The `a2a/generated_types.go` file is **auto-generated** from the A2A JSON-RPC schema and should **NEVER** be edited manually. To regenerate:
-
-1. Download latest schema: `task a2a:download:schema`
-2. Generate types: `task generate`
-
-The generator reads `a2a/schema.yaml` and produces Go types for the A2A protocol.
+A2A protocol types come from `github.com/inference-gateway/adk/types` (generated upstream from the A2A JSON-RPC schema). To pick up schema changes, bump the `adk` dependency rather than running a local generator — there is no local generation in this repo.
 
 ### CLI Command Structure
 
@@ -45,9 +40,6 @@ Key architectural patterns:
 ### Development Workflow
 
 ```bash
-# Generate code from schema (required after schema updates)
-task generate
-
 # Run linting
 task lint
 
@@ -109,13 +101,12 @@ output: yaml  # or json
 
 ## CI/CD Pipeline
 
-The CI workflow (`task generate` → `task tidy` → dirty check → `task lint` → `task build` → `task test`) ensures:
-1. Generated code is up-to-date
-2. Dependencies are tidy
-3. No uncommitted changes
-4. Code passes linting
-5. Build succeeds
-6. Tests pass
+The CI workflow (`task tidy` → dirty check → `task lint` → `task build` → `task test`) ensures:
+1. Dependencies are tidy
+2. No uncommitted changes
+3. Code passes linting
+4. Build succeeds
+5. Tests pass
 
 ## Adding New Commands
 

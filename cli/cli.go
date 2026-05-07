@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	a2a "github.com/inference-gateway/a2a-debugger/a2a"
 	client "github.com/inference-gateway/adk/client"
 	adk "github.com/inference-gateway/adk/types"
 	cobra "github.com/spf13/cobra"
@@ -192,9 +191,9 @@ func handleA2AError(err error, method string) error {
 	}
 
 	var jsonErr struct {
-		Error *a2a.MethodNotFoundError `json:"error,omitempty"`
+		Error *adk.JSONRPCError `json:"error,omitempty"`
 	}
-	if jsonParseErr := json.Unmarshal([]byte(errStr), &jsonErr); jsonParseErr == nil && jsonErr.Error != nil {
+	if jsonParseErr := json.Unmarshal([]byte(errStr), &jsonErr); jsonParseErr == nil && jsonErr.Error != nil && jsonErr.Error.Code == -32601 {
 		displayMethod := method
 		if displayMethod == "" {
 			displayMethod = "method"
@@ -392,7 +391,6 @@ var listTasksCmd = &cobra.Command{
 			for _, task := range tasks {
 				filteredTask := adk.Task{
 					ID:        task.ID,
-					Kind:      task.Kind,
 					ContextID: task.ContextID,
 					Status:    task.Status,
 					Metadata:  task.Metadata,
@@ -410,7 +408,7 @@ var listTasksCmd = &cobra.Command{
 
 		output := map[string]any{
 			"tasks":   tasks,
-			"total":   taskList.Total,
+			"total":   taskList.TotalSize,
 			"showing": len(tasks),
 		}
 
@@ -552,14 +550,10 @@ var submitTaskCmd = &cobra.Command{
 
 		params := adk.MessageSendParams{
 			Message: adk.Message{
-				Kind:      "message",
 				MessageID: messageID,
-				Role:      "user",
+				Role:      adk.RoleUser,
 				Parts: []adk.Part{
-					map[string]any{
-						"kind": "text",
-						"text": message,
-					},
+					{Text: &message},
 				},
 			},
 		}
@@ -618,14 +612,10 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 		params := adk.MessageSendParams{
 			Message: adk.Message{
-				Kind:      "message",
 				MessageID: messageID,
-				Role:      "user",
+				Role:      adk.RoleUser,
 				Parts: []adk.Part{
-					map[string]any{
-						"kind": "text",
-						"text": message,
-					},
+					{Text: &message},
 				},
 			},
 		}
@@ -640,15 +630,10 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 		logger.Debug("submitting new streaming task", zap.String("message", message), zap.String("context_id", contextID), zap.String("task_id", taskID))
 
-		eventChan := make(chan any, 100)
-
-		go func() {
-			defer close(eventChan)
-			err := a2aClient.SendTaskStreaming(ctx, params, eventChan)
-			if err != nil {
-				logger.Error("Streaming error", zap.Error(err))
-			}
-		}()
+		respChan, err := a2aClient.SendTaskStreaming(ctx, params)
+		if err != nil {
+			return handleA2AError(err, "message/stream")
+		}
 
 		fmt.Printf("✅ Streaming task submitted successfully!\n\n")
 		if contextID != "" {
@@ -667,10 +652,10 @@ var submitStreamingTaskCmd = &cobra.Command{
 			FinalMessage    *adk.Message
 		}
 
-		for event := range eventChan {
+		for resp := range respChan {
 			streamingSummary.TotalEvents++
 
-			eventJSON, err := json.Marshal(event)
+			eventJSON, err := json.Marshal(resp.Result)
 			if err != nil {
 				logger.Error("Failed to marshal event", zap.Error(err))
 				continue
@@ -687,7 +672,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				switch kind {
 				case "status-update":
 					streamingSummary.StatusUpdates++
-					var statusEvent a2a.TaskStatusUpdateEvent
+					var statusEvent adk.TaskStatusUpdateEvent
 					if err := json.Unmarshal(eventJSON, &statusEvent); err == nil {
 						if streamingSummary.TaskID == "" {
 							streamingSummary.TaskID = statusEvent.TaskID
@@ -697,24 +682,12 @@ var submitStreamingTaskCmd = &cobra.Command{
 						}
 						streamingSummary.FinalStatus = string(statusEvent.Status.State)
 						if statusEvent.Status.Message != nil {
-							adkParts := make([]adk.Part, len(statusEvent.Status.Message.Parts))
-							for i, part := range statusEvent.Status.Message.Parts {
-								adkParts[i] = adk.Part(part)
-							}
-
-							adkMessage := &adk.Message{
-								Kind:      statusEvent.Status.Message.Kind,
-								MessageID: statusEvent.Status.Message.MessageID,
-								Role:      statusEvent.Status.Message.Role,
-								Parts:     adkParts,
-								ContextID: statusEvent.Status.Message.ContextID,
-							}
-							streamingSummary.FinalMessage = adkMessage
+							streamingSummary.FinalMessage = statusEvent.Status.Message
 						}
 					}
 				case "artifact-update":
 					streamingSummary.ArtifactUpdates++
-					var artifactEvent a2a.TaskArtifactUpdateEvent
+					var artifactEvent adk.TaskArtifactUpdateEvent
 					if err := json.Unmarshal(eventJSON, &artifactEvent); err == nil {
 						if streamingSummary.TaskID == "" {
 							streamingSummary.TaskID = artifactEvent.TaskID
@@ -727,7 +700,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 			}
 
 			if showRaw {
-				eventJSONFormatted, err := json.MarshalIndent(event, "", "  ")
+				eventJSONFormatted, err := json.MarshalIndent(resp.Result, "", "  ")
 				if err != nil {
 					logger.Error("Failed to marshal event", zap.Error(err))
 					continue
@@ -741,7 +714,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 				switch kind {
 				case "status-update":
-					var statusEvent a2a.TaskStatusUpdateEvent
+					var statusEvent adk.TaskStatusUpdateEvent
 					if err := json.Unmarshal(eventJSON, &statusEvent); err != nil {
 						logger.Error("Failed to unmarshal status event", zap.Error(err))
 						continue
@@ -759,19 +732,15 @@ var submitStreamingTaskCmd = &cobra.Command{
 					if statusEvent.Status.Message != nil && len(statusEvent.Status.Message.Parts) > 0 {
 						fmt.Printf("\n💬 Agent Response:\n")
 						for _, part := range statusEvent.Status.Message.Parts {
-							if partMap, ok := part.(map[string]any); ok {
-								if kind, ok := partMap["kind"].(string); ok && kind == "text" {
-									if text, ok := partMap["text"].(string); ok {
-										fmt.Printf("%s\n", text)
-									}
-								}
+							if part.Text != nil {
+								fmt.Printf("%s\n", *part.Text)
 							}
 						}
 						fmt.Printf("\n")
 					}
 
 				case "artifact-update":
-					var artifactEvent a2a.TaskArtifactUpdateEvent
+					var artifactEvent adk.TaskArtifactUpdateEvent
 					if err := json.Unmarshal(eventJSON, &artifactEvent); err != nil {
 						logger.Error("Failed to unmarshal artifact event", zap.Error(err))
 						continue
@@ -788,14 +757,13 @@ var submitStreamingTaskCmd = &cobra.Command{
 					if len(artifactEvent.Artifact.Parts) > 0 {
 						fmt.Printf("  Parts:\n")
 						for i, part := range artifactEvent.Artifact.Parts {
-							if partMap, ok := part.(map[string]any); ok {
-								if kind, exists := partMap["kind"]; exists {
-									fmt.Printf("    Part %d: [%v]", i+1, kind)
-									if text, exists := partMap["text"]; exists {
-										fmt.Printf(" %v", text)
-									}
-									fmt.Printf("\n")
-								}
+							switch {
+							case part.Text != nil:
+								fmt.Printf("    Part %d: [text] %s\n", i+1, *part.Text)
+							case part.File != nil:
+								fmt.Printf("    Part %d: [file] %s\n", i+1, part.File.Name)
+							case part.Data != nil:
+								fmt.Printf("    Part %d: [data]\n", i+1)
 							}
 						}
 					}
