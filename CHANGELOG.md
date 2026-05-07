@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.0...v0.8.1) (2026-05-07)
+
+### 👷 CI
+
+* Bump checkout and setup-go actions versions ([bd64aa5](https://github.com/inference-gateway/a2a-debugger/commit/bd64aa5039881c274d831b794edef099a3fada66))
+* **deps:** Bump golangci-lint to latest ([b45dce8](https://github.com/inference-gateway/a2a-debugger/commit/b45dce8428f579d32a56c78647560a9560ce65ad))
+* **deps:** Update golangci-lint installation script to use the latest version v2.12.2 ([135b290](https://github.com/inference-gateway/a2a-debugger/commit/135b2900b4c84e107f21e670a3344e8cd09cfa80))
+* Update task installation version to v3.48.0 in CI workflows ([cd0f5f7](https://github.com/inference-gateway/a2a-debugger/commit/cd0f5f7d4cd6a6bf32256d73df80d18a75a7a306))
+
 ## [0.8.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.7.0...v0.8.0) (2025-10-09)
 
 ### ✨ Features
