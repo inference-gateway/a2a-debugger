@@ -1,10 +1,10 @@
+---
 services:
   a2a-server:
     image: ghcr.io/inference-gateway/google-calendar-agent:latest
     pull_policy: always
     environment:
-      DEMO_MODE: true
-      ENVIRONMENT: dev
+      GOOGLE_CALENDAR_MOCK_MODE: true
       A2A_AGENT_URL: 'http://localhost:8080'
     networks:
       - a2a-network
