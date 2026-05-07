@@ -1,6 +1,6 @@
 module github.com/inference-gateway/a2a-debugger
 
-go 1.25
+go 1.26.2
 
 require (
 	github.com/inference-gateway/adk v0.7.4
