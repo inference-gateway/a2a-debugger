@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.1...v0.8.2) (2026-05-07)
+
+### ♻️ Improvements
+
+* **deps:** Remove devcontainer ([d346703](https://github.com/inference-gateway/a2a-debugger/commit/d34670320509905fcc5dedeecdd677432b547255))
+* **docs:** Remove redundant copilot-instructions ([7f97852](https://github.com/inference-gateway/a2a-debugger/commit/7f97852683c4931b01aecee44c458498ef517cab))
+* **types:** Consume A2A types from adk/types, drop local generation ([b929114](https://github.com/inference-gateway/a2a-debugger/commit/b9291145586ee6b78ba3b31245b345f32aa474fe))
+* Use the correct environment variables ([01ad8a9](https://github.com/inference-gateway/a2a-debugger/commit/01ad8a9ddb8a591b1e80ddd5e733ffe8f4290967))
+
+### 🐛 Bug Fixes
+
+* **streaming:** Discriminate events structurally; switch example to mock-agent ([2385de5](https://github.com/inference-gateway/a2a-debugger/commit/2385de5a9fdecd6f614497d534f5cdfbf6492fa8))
+
+### 👷 CI
+
+* Bump all actions to latest ([4b5ab22](https://github.com/inference-gateway/a2a-debugger/commit/4b5ab2248030635d0580edc1114240d9f727bdca))
+
+### 📚 Documentation
+
+* Add AGENTS.md ([ea16585](https://github.com/inference-gateway/a2a-debugger/commit/ea16585402a7c713196e6f43b86949cca72bfc8d))
+* Update CLAUDE.md for clarity on CLI command structure and testing against mock A2A server ([c54dbf2](https://github.com/inference-gateway/a2a-debugger/commit/c54dbf26621cd283a70e24f211c1034c8a045384))
+
+### 🔧 Miscellaneous
+
+* Add .env to git ignore ([68eb604](https://github.com/inference-gateway/a2a-debugger/commit/68eb604fe473cb9d64b8e6c2304a576469a9fe92))
+* **deps:** Update dependencies to latest versions (Go 1.26.2, go-task 3.48.0, claude-code 2.1.123) ([6088465](https://github.com/inference-gateway/a2a-debugger/commit/6088465db8c6457d7c6ad07991ed25c0d9741e35))
+* Remove outdated issue templates for bug, feature, and refactor requests ([8b36c50](https://github.com/inference-gateway/a2a-debugger/commit/8b36c50bc24fa297de6f9f0e5d692a3b70f59ae3))
+* Sort imports ([f4d2b72](https://github.com/inference-gateway/a2a-debugger/commit/f4d2b726f670f8fe4acb8a46923ecb8f48414b54))
+
 ## [0.8.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.0...v0.8.1) (2026-05-07)
 
 ### 👷 CI
