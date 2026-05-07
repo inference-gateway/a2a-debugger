@@ -86,7 +86,6 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 
 			ch <- adk.JSONRPCSuccessResponse{
 				Result: map[string]any{
-					"kind":      "status-update",
 					"taskId":    "test-task-123",
 					"contextId": "test-context-456",
 					"final":     false,
@@ -105,7 +104,6 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 
 			ch <- adk.JSONRPCSuccessResponse{
 				Result: map[string]any{
-					"kind":      "artifact-update",
 					"taskId":    "test-task-123",
 					"contextId": "test-context-456",
 					"artifact": map[string]any{
@@ -119,7 +117,6 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 
 			ch <- adk.JSONRPCSuccessResponse{
 				Result: map[string]any{
-					"kind":      "status-update",
 					"taskId":    "test-task-123",
 					"contextId": "test-context-456",
 					"final":     true,
@@ -196,7 +193,6 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 			ch := make(chan adk.JSONRPCSuccessResponse, 1)
 			ch <- adk.JSONRPCSuccessResponse{
 				Result: map[string]any{
-					"kind":      "status-update",
 					"taskId":    "test-task-456",
 					"contextId": "test-context-789",
 					"final":     true,
@@ -244,6 +240,82 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 		"Total Events: 1",
 		"Status Updates: 1",
 		"Artifact Updates: 0",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(output, part) {
+			t.Errorf("Expected output to contain '%s', but it didn't.\nActual output:\n%s", part, output)
+		}
+	}
+}
+
+func TestSubmitStreamingTaskCmd_TaskSnapshot(t *testing.T) {
+	originalClient := a2aClient
+	originalLogger := logger
+
+	testLogger, _ := zap.NewDevelopment()
+	logger = testLogger
+
+	mockClient := &mockA2AClient{
+		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error) {
+			ch := make(chan adk.JSONRPCSuccessResponse, 1)
+			finalText := "All done"
+			ch <- adk.JSONRPCSuccessResponse{
+				Result: map[string]any{
+					"id":        "task-snapshot-1",
+					"contextId": "ctx-snapshot-1",
+					"history":   []map[string]any{},
+					"status": map[string]any{
+						"state": string(adk.TaskStateCompleted),
+						"message": map[string]any{
+							"messageId": "msg-final",
+							"role":      string(adk.RoleAgent),
+							"parts": []map[string]any{
+								{"text": finalText},
+							},
+						},
+					},
+				},
+			}
+			close(ch)
+			return ch, nil
+		},
+	}
+	a2aClient = mockClient
+
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("context-id", "", "Context ID for the task")
+	cmd.Flags().Bool("raw", false, "Show raw streaming event data")
+
+	err := submitStreamingTaskCmd.RunE(cmd, []string{"snapshot"})
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	output := buf.String()
+
+	a2aClient = originalClient
+	logger = originalLogger
+
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	expectedParts := []string{
+		"Task Snapshot: task-snapshot-1",
+		"Streaming Summary:",
+		"Task ID: task-snapshot-1",
+		"Context ID: ctx-snapshot-1",
+		"Final Status: " + string(adk.TaskStateCompleted),
+		"Total Events: 1",
+		"Status Updates: 0",
+		"Artifact Updates: 0",
+		"Final Message Parts: 1",
 	}
 
 	for _, part := range expectedParts {

@@ -136,7 +136,7 @@ docker compose run --rm a2a-debugger tasks --help
 
 ## 📝 Notes
 
-- The a2a-server runs in demo mode (`APP_DEMO_MODE=true`)
+- The a2a-server runs the [`mock-agent`](https://github.com/inference-gateway/mock-agent) image, which uses a mock LLM client — no API keys required
 - All services communicate over the `a2a-network` bridge network
 - The debugger is configured to use `http://a2a-server:8080` as the default server URL
 - Use `connect` command first to check if the A2A server supports streaming capabilities

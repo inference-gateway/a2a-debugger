@@ -667,34 +667,59 @@ var submitStreamingTaskCmd = &cobra.Command{
 				continue
 			}
 
-			kind, ok := genericEvent["kind"].(string)
-			if ok {
-				switch kind {
-				case "status-update":
-					streamingSummary.StatusUpdates++
-					var statusEvent adk.TaskStatusUpdateEvent
-					if err := json.Unmarshal(eventJSON, &statusEvent); err == nil {
-						if streamingSummary.TaskID == "" {
-							streamingSummary.TaskID = statusEvent.TaskID
-						}
-						if streamingSummary.ContextID == "" {
-							streamingSummary.ContextID = statusEvent.ContextID
-						}
-						streamingSummary.FinalStatus = string(statusEvent.Status.State)
-						if statusEvent.Status.Message != nil {
-							streamingSummary.FinalMessage = statusEvent.Status.Message
-						}
+			_, hasArtifact := genericEvent["artifact"]
+			_, hasFinal := genericEvent["final"]
+			_, hasID := genericEvent["id"]
+
+			eventKind := ""
+			switch {
+			case hasArtifact:
+				eventKind = "artifact-update"
+			case hasFinal:
+				eventKind = "status-update"
+			case hasID:
+				eventKind = "task"
+			}
+
+			switch eventKind {
+			case "status-update":
+				streamingSummary.StatusUpdates++
+				var statusEvent adk.TaskStatusUpdateEvent
+				if err := json.Unmarshal(eventJSON, &statusEvent); err == nil {
+					if streamingSummary.TaskID == "" {
+						streamingSummary.TaskID = statusEvent.TaskID
 					}
-				case "artifact-update":
-					streamingSummary.ArtifactUpdates++
-					var artifactEvent adk.TaskArtifactUpdateEvent
-					if err := json.Unmarshal(eventJSON, &artifactEvent); err == nil {
-						if streamingSummary.TaskID == "" {
-							streamingSummary.TaskID = artifactEvent.TaskID
-						}
-						if streamingSummary.ContextID == "" {
-							streamingSummary.ContextID = artifactEvent.ContextID
-						}
+					if streamingSummary.ContextID == "" {
+						streamingSummary.ContextID = statusEvent.ContextID
+					}
+					streamingSummary.FinalStatus = string(statusEvent.Status.State)
+					if statusEvent.Status.Message != nil {
+						streamingSummary.FinalMessage = statusEvent.Status.Message
+					}
+				}
+			case "artifact-update":
+				streamingSummary.ArtifactUpdates++
+				var artifactEvent adk.TaskArtifactUpdateEvent
+				if err := json.Unmarshal(eventJSON, &artifactEvent); err == nil {
+					if streamingSummary.TaskID == "" {
+						streamingSummary.TaskID = artifactEvent.TaskID
+					}
+					if streamingSummary.ContextID == "" {
+						streamingSummary.ContextID = artifactEvent.ContextID
+					}
+				}
+			case "task":
+				var task adk.Task
+				if err := json.Unmarshal(eventJSON, &task); err == nil {
+					if streamingSummary.TaskID == "" {
+						streamingSummary.TaskID = task.ID
+					}
+					if streamingSummary.ContextID == "" {
+						streamingSummary.ContextID = task.ContextID
+					}
+					streamingSummary.FinalStatus = string(task.Status.State)
+					if task.Status.Message != nil {
+						streamingSummary.FinalMessage = task.Status.Message
 					}
 				}
 			}
@@ -707,12 +732,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				}
 				fmt.Printf("📡 Raw Event:\n%s\n\n", eventJSONFormatted)
 			} else {
-				if !ok {
-					fmt.Printf("🔔 Unknown Event (no kind field)\n")
-					continue
-				}
-
-				switch kind {
+				switch eventKind {
 				case "status-update":
 					var statusEvent adk.TaskStatusUpdateEvent
 					if err := json.Unmarshal(eventJSON, &statusEvent); err != nil {
@@ -771,8 +791,26 @@ var submitStreamingTaskCmd = &cobra.Command{
 						fmt.Printf("  [LAST CHUNK]\n")
 					}
 
+				case "task":
+					var task adk.Task
+					if err := json.Unmarshal(eventJSON, &task); err != nil {
+						logger.Error("Failed to unmarshal task snapshot", zap.Error(err))
+						continue
+					}
+
+					fmt.Printf("📦 Task Snapshot: %s [%s]\n", task.ID, task.Status.State)
+					if task.Status.Message != nil && len(task.Status.Message.Parts) > 0 {
+						fmt.Printf("\n💬 Agent Response:\n")
+						for _, part := range task.Status.Message.Parts {
+							if part.Text != nil {
+								fmt.Printf("%s\n", *part.Text)
+							}
+						}
+						fmt.Printf("\n")
+					}
+
 				default:
-					fmt.Printf("🔔 Unknown Event Type: %s\n", kind)
+					fmt.Printf("🔔 Unknown Event\n")
 				}
 				fmt.Printf("\n")
 			}
