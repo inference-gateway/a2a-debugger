@@ -20,7 +20,7 @@ A2A protocol types come from `github.com/inference-gateway/adk/types` (generated
 
 ### CLI Command Structure
 
-All CLI commands are implemented in a **single file**: `cli/cli.go` (~806 lines). The command structure is namespace-based:
+All CLI commands live in a **single file**: `cli/cli.go`. Tests sit alongside it (`cli_test.go`, `cli_output_test.go`). The command structure is namespace-based:
 
 - **Config namespace** (`a2a config`): Configuration management (set, get, list)
 - **Tasks namespace** (`a2a tasks`): Task operations (list, get, history, submit, submit-streaming)
@@ -33,7 +33,7 @@ Key architectural patterns:
 
 ### Entry Point
 
-`main.go` is minimal - it just passes version info to `cli.Execute()`.
+`main.go` is minimal — it passes ldflags-injected `version`/`commit`/`date` vars to `cli.Execute()`.
 
 ## Common Commands
 
@@ -68,11 +68,13 @@ task tidy
 # Run the built binary
 ./dist/a2a --help
 
-# Test with local A2A server (example environment)
+# Test against a mock A2A server (no API keys required — uses ghcr.io/inference-gateway/mock-agent)
 cd example
 docker compose up -d
 docker compose run --rm a2a-debugger connect
 ```
+
+The `example/` directory is the canonical end-to-end harness. It boots a mock-agent A2A server and runs the debugger against it over a Docker bridge network — use it when validating behavior that depends on a real (mock) server, not just unit tests.
 
 ### Installation
 
