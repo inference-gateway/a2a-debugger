@@ -25,6 +25,10 @@ func (m *mockA2AClient) GetAgentCard(ctx context.Context) (*adk.AgentCard, error
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (m *mockA2AClient) GetAuthenticatedExtendedCard(ctx context.Context, params adk.GetAuthenticatedExtendedCardParams) (*adk.JSONRPCSuccessResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 func (m *mockA2AClient) GetHealth(ctx context.Context) (*client.HealthResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
@@ -49,6 +53,26 @@ func (m *mockA2AClient) SendTaskStreaming(ctx context.Context, params adk.Messag
 }
 
 func (m *mockA2AClient) CancelTask(ctx context.Context, params adk.TaskIdParams) (*adk.JSONRPCSuccessResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockA2AClient) ResubscribeTask(ctx context.Context, params adk.TaskResubscriptionParams) (<-chan adk.JSONRPCSuccessResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockA2AClient) SetTaskPushNotificationConfig(ctx context.Context, params adk.TaskPushNotificationConfig) (*adk.JSONRPCSuccessResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockA2AClient) GetTaskPushNotificationConfig(ctx context.Context, params adk.GetTaskPushNotificationConfigParams) (*adk.JSONRPCSuccessResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockA2AClient) ListTaskPushNotificationConfig(ctx context.Context, params adk.ListTaskPushNotificationConfigParams) (*adk.JSONRPCSuccessResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (m *mockA2AClient) DeleteTaskPushNotificationConfig(ctx context.Context, params adk.DeleteTaskPushNotificationConfigParams) (*adk.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
