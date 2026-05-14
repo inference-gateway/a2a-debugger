@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.3](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.2...v0.8.3) (2026-05-14)
+
+### 👷 CI
+
+* **artifacts:** Drop trivy container scan job ([f0a7175](https://github.com/inference-gateway/a2a-debugger/commit/f0a71751fcd1c1d0c95a9beb4c3039889704396a))
+* **dependabot:** Add dependabot to help with dependecies upgrades ([cd96f5e](https://github.com/inference-gateway/a2a-debugger/commit/cd96f5e6c2fbef279ded5923ff1689801101cf85))
+* **deps:** Bump actions/create-github-app-token from 3.1.1 to 3.2.0 ([#23](https://github.com/inference-gateway/a2a-debugger/issues/23)) ([529ff28](https://github.com/inference-gateway/a2a-debugger/commit/529ff284f20a5239bac7860ed3446eb85105bd81))
+* **deps:** Bump anthropics/claude-code-action from 1.0.114 to 1.0.121 ([#22](https://github.com/inference-gateway/a2a-debugger/issues/22)) ([0f4e791](https://github.com/inference-gateway/a2a-debugger/commit/0f4e7917bd1db75cf625bac0d49077d488d0feb6))
+* **deps:** Bump aquasecurity/trivy-action from 0.33.1 to 0.36.0 ([#24](https://github.com/inference-gateway/a2a-debugger/issues/24)) ([1941cf6](https://github.com/inference-gateway/a2a-debugger/commit/1941cf6cec410f1726e13695bd5a7484d4b65d27))
+* Enable display report for Claude Code action ([1caac40](https://github.com/inference-gateway/a2a-debugger/commit/1caac4094eb659c0ec3d7b933cbfae2d7c6d4251))
+
+### 🔧 Miscellaneous
+
+* Add CODEOWNERS file for repository ownership ([f8095ae](https://github.com/inference-gateway/a2a-debugger/commit/f8095ae3edc150f481d6b59623c5cc0bc7094ebf))
+* Add Dependabot configuration for Go modules and GitHub Actions ([83bdf16](https://github.com/inference-gateway/a2a-debugger/commit/83bdf16fe5fce466961d2ef5bc441faba10f4efc))
+* **deps:** Add lock file ([ff93b53](https://github.com/inference-gateway/a2a-debugger/commit/ff93b530d5cb6aed8d30482043b9b316b731d27f))
+* **dev-deps:** Add infer.flake flox to manifest ([a5e7b7a](https://github.com/inference-gateway/a2a-debugger/commit/a5e7b7af89e970f15d39b8aef0cebcafe276aa82))
+
+### 🔨 Miscellaneous
+
+* **deps:** Bump github/codeql-action from 3 to 4 ([#25](https://github.com/inference-gateway/a2a-debugger/issues/25)) ([975c2f7](https://github.com/inference-gateway/a2a-debugger/commit/975c2f73b22b29e820173a07516430dd952af627))
+
 ## [0.8.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.1...v0.8.2) (2026-05-07)
 
 ### ♻️ Improvements
