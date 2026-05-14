@@ -9,6 +9,7 @@ go-task.version = "^3.48.0"
 
 claude-code.pkg-path = "claude-code"
 claude-code.version = "^2.1.123"
+infer.flake = "github:inference-gateway/cli/v0.109.6"
 
 [hook]
 on-activate = """
