@@ -26,7 +26,7 @@ This file provides guidance to AI agents (Claude Code, Copilot, etc.) working wi
 - **Config file**: `~/.a2a.yaml` (YAML format)
 - **Output formats**: YAML (default) and JSON
 - **Current version**: `0.8.1`
-- **License**: MIT
+- **License**: Apache-2.0
 
 ## Project Structure
 
