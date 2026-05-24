@@ -6,7 +6,7 @@ go.version = "^1.26.2"
 go-task.pkg-path = "go-task"
 go-task.version = "^3.48.0"
 claude-code.pkg-path = "claude-code"
-claude-code.version = "^2.1.141"
+claude-code.version = "^2.1.148"
 infer.flake = "github:inference-gateway/cli/v0.109.11"
 
 [hook]
