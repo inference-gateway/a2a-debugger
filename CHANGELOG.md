@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.4](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.3...v0.8.4) (2026-05-24)
+
+### 👷 CI
+
+* Add maintainer skill ([2c44b09](https://github.com/inference-gateway/a2a-debugger/commit/2c44b095d611967a9b94a02bd96bd024108d31c2))
+* **deps:** Bump anthropics/claude-code-action ([#29](https://github.com/inference-gateway/a2a-debugger/issues/29)) ([b94f6e7](https://github.com/inference-gateway/a2a-debugger/commit/b94f6e7eaa75f5da0674c6fee6fa4f0969e85abf))
+* **deps:** Update Claude Code Action to version 1.0.131 ([ae7f4ec](https://github.com/inference-gateway/a2a-debugger/commit/ae7f4ec93275dea1371d2d02a4c13dd66cd0da26))
+* **deps:** Update claude-code-action to version 1.0.130 ([da770be](https://github.com/inference-gateway/a2a-debugger/commit/da770bef821cda451cd2f0fe391e12f020698500))
+* **deps:** Update installation methods for Go tools and linters in workflows ([1186c53](https://github.com/inference-gateway/a2a-debugger/commit/1186c536f0e82d7bab4c984fdae2a827858dacc0))
+
+### 🔧 Miscellaneous
+
+* **deps:** Update claude-code version to 2.1.141 and infer.flake to v0.109.11 ([5ae360f](https://github.com/inference-gateway/a2a-debugger/commit/5ae360fe2b7bc15a83945326bae9a8088981ea5c))
+* **deps:** Update golang and ubuntu version constraints in dependabot config ([8663a9a](https://github.com/inference-gateway/a2a-debugger/commit/8663a9ac868256fec6b5c084bae61300a800f91f))
+* **license:** Update license to Apache 2.0 ([a72ba41](https://github.com/inference-gateway/a2a-debugger/commit/a72ba41a849f4d6d18e73b7591d55d09662420bd))
+
+### 🔨 Miscellaneous
+
+* **deps:** Bump github.com/inference-gateway/adk from 0.17.3 to 0.18.0 ([#26](https://github.com/inference-gateway/a2a-debugger/issues/26)) ([69cbaaa](https://github.com/inference-gateway/a2a-debugger/commit/69cbaaa854577a1d4b84da1bdb2aa06201bede47))
+* **deps:** Bump github.com/inference-gateway/adk in the gomod group ([#28](https://github.com/inference-gateway/a2a-debugger/issues/28)) ([6169088](https://github.com/inference-gateway/a2a-debugger/commit/616908899a60b3fcea523b34dbdd1a82db804dee))
+* **deps:** Bump golang in the docker group ([#27](https://github.com/inference-gateway/a2a-debugger/issues/27)) ([dcf968e](https://github.com/inference-gateway/a2a-debugger/commit/dcf968ed0456c389f63ca07f1958fea7df0ec496))
+* **deps:** Downgrade golang version to 1.26.2 in Dockerfile and update dependabot config ([303305d](https://github.com/inference-gateway/a2a-debugger/commit/303305da29bf21876d8aaa5282c8a9f8cb69b1c9))
+
 ## [0.8.3](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.2...v0.8.3) (2026-05-14)
 
 ### 👷 CI
