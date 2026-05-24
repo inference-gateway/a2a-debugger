@@ -14,18 +14,13 @@ A2A Debugger is a CLI tool for debugging and monitoring A2A (Agent-to-Agent) ser
 
 ## Architecture
 
-### Code Generation
+### A2A Types
 
-The `a2a/generated_types.go` file is **auto-generated** from the A2A JSON-RPC schema and should **NEVER** be edited manually. To regenerate:
-
-1. Download latest schema: `task a2a:download:schema`
-2. Generate types: `task generate`
-
-The generator reads `a2a/schema.yaml` and produces Go types for the A2A protocol.
+A2A protocol types come from `github.com/inference-gateway/adk/types` (generated upstream from the A2A JSON-RPC schema). To pick up schema changes, bump the `adk` dependency rather than running a local generator — there is no local generation in this repo.
 
 ### CLI Command Structure
 
-All CLI commands are implemented in a **single file**: `cli/cli.go` (~806 lines). The command structure is namespace-based:
+All CLI commands live in a **single file**: `cli/cli.go`. Tests sit alongside it (`cli_test.go`, `cli_output_test.go`). The command structure is namespace-based:
 
 - **Config namespace** (`a2a config`): Configuration management (set, get, list)
 - **Tasks namespace** (`a2a tasks`): Task operations (list, get, history, submit, submit-streaming)
@@ -38,16 +33,13 @@ Key architectural patterns:
 
 ### Entry Point
 
-`main.go` is minimal - it just passes version info to `cli.Execute()`.
+`main.go` is minimal — it passes ldflags-injected `version`/`commit`/`date` vars to `cli.Execute()`.
 
 ## Common Commands
 
 ### Development Workflow
 
 ```bash
-# Generate code from schema (required after schema updates)
-task generate
-
 # Run linting
 task lint
 
@@ -76,11 +68,13 @@ task tidy
 # Run the built binary
 ./dist/a2a --help
 
-# Test with local A2A server (example environment)
+# Test against a mock A2A server (no API keys required — uses ghcr.io/inference-gateway/mock-agent)
 cd example
 docker compose up -d
 docker compose run --rm a2a-debugger connect
 ```
+
+The `example/` directory is the canonical end-to-end harness. It boots a mock-agent A2A server and runs the debugger against it over a Docker bridge network — use it when validating behavior that depends on a real (mock) server, not just unit tests.
 
 ### Installation
 
@@ -109,13 +103,12 @@ output: yaml  # or json
 
 ## CI/CD Pipeline
 
-The CI workflow (`task generate` → `task tidy` → dirty check → `task lint` → `task build` → `task test`) ensures:
-1. Generated code is up-to-date
-2. Dependencies are tidy
-3. No uncommitted changes
-4. Code passes linting
-5. Build succeeds
-6. Tests pass
+The CI workflow (`task tidy` → dirty check → `task lint` → `task build` → `task test`) ensures:
+1. Dependencies are tidy
+2. No uncommitted changes
+3. Code passes linting
+4. Build succeeds
+5. Tests pass
 
 ## Adding New Commands
 

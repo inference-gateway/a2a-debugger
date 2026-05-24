@@ -2,6 +2,100 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.4](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.3...v0.8.4) (2026-05-24)
+
+### 👷 CI
+
+* Add maintainer skill ([2c44b09](https://github.com/inference-gateway/a2a-debugger/commit/2c44b095d611967a9b94a02bd96bd024108d31c2))
+* **deps:** Bump anthropics/claude-code-action ([#29](https://github.com/inference-gateway/a2a-debugger/issues/29)) ([b94f6e7](https://github.com/inference-gateway/a2a-debugger/commit/b94f6e7eaa75f5da0674c6fee6fa4f0969e85abf))
+* **deps:** Update Claude Code Action to version 1.0.131 ([ae7f4ec](https://github.com/inference-gateway/a2a-debugger/commit/ae7f4ec93275dea1371d2d02a4c13dd66cd0da26))
+* **deps:** Update claude-code-action to version 1.0.130 ([da770be](https://github.com/inference-gateway/a2a-debugger/commit/da770bef821cda451cd2f0fe391e12f020698500))
+* **deps:** Update installation methods for Go tools and linters in workflows ([1186c53](https://github.com/inference-gateway/a2a-debugger/commit/1186c536f0e82d7bab4c984fdae2a827858dacc0))
+
+### 🔧 Miscellaneous
+
+* **deps:** Update claude-code version to 2.1.141 and infer.flake to v0.109.11 ([5ae360f](https://github.com/inference-gateway/a2a-debugger/commit/5ae360fe2b7bc15a83945326bae9a8088981ea5c))
+* **deps:** Update golang and ubuntu version constraints in dependabot config ([8663a9a](https://github.com/inference-gateway/a2a-debugger/commit/8663a9ac868256fec6b5c084bae61300a800f91f))
+* **license:** Update license to Apache 2.0 ([a72ba41](https://github.com/inference-gateway/a2a-debugger/commit/a72ba41a849f4d6d18e73b7591d55d09662420bd))
+
+### 🔨 Miscellaneous
+
+* **deps:** Bump github.com/inference-gateway/adk from 0.17.3 to 0.18.0 ([#26](https://github.com/inference-gateway/a2a-debugger/issues/26)) ([69cbaaa](https://github.com/inference-gateway/a2a-debugger/commit/69cbaaa854577a1d4b84da1bdb2aa06201bede47))
+* **deps:** Bump github.com/inference-gateway/adk in the gomod group ([#28](https://github.com/inference-gateway/a2a-debugger/issues/28)) ([6169088](https://github.com/inference-gateway/a2a-debugger/commit/616908899a60b3fcea523b34dbdd1a82db804dee))
+* **deps:** Bump golang in the docker group ([#27](https://github.com/inference-gateway/a2a-debugger/issues/27)) ([dcf968e](https://github.com/inference-gateway/a2a-debugger/commit/dcf968ed0456c389f63ca07f1958fea7df0ec496))
+* **deps:** Downgrade golang version to 1.26.2 in Dockerfile and update dependabot config ([303305d](https://github.com/inference-gateway/a2a-debugger/commit/303305da29bf21876d8aaa5282c8a9f8cb69b1c9))
+
+## [0.8.3](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.2...v0.8.3) (2026-05-14)
+
+### 👷 CI
+
+* **artifacts:** Drop trivy container scan job ([f0a7175](https://github.com/inference-gateway/a2a-debugger/commit/f0a71751fcd1c1d0c95a9beb4c3039889704396a))
+* **dependabot:** Add dependabot to help with dependecies upgrades ([cd96f5e](https://github.com/inference-gateway/a2a-debugger/commit/cd96f5e6c2fbef279ded5923ff1689801101cf85))
+* **deps:** Bump actions/create-github-app-token from 3.1.1 to 3.2.0 ([#23](https://github.com/inference-gateway/a2a-debugger/issues/23)) ([529ff28](https://github.com/inference-gateway/a2a-debugger/commit/529ff284f20a5239bac7860ed3446eb85105bd81))
+* **deps:** Bump anthropics/claude-code-action from 1.0.114 to 1.0.121 ([#22](https://github.com/inference-gateway/a2a-debugger/issues/22)) ([0f4e791](https://github.com/inference-gateway/a2a-debugger/commit/0f4e7917bd1db75cf625bac0d49077d488d0feb6))
+* **deps:** Bump aquasecurity/trivy-action from 0.33.1 to 0.36.0 ([#24](https://github.com/inference-gateway/a2a-debugger/issues/24)) ([1941cf6](https://github.com/inference-gateway/a2a-debugger/commit/1941cf6cec410f1726e13695bd5a7484d4b65d27))
+* Enable display report for Claude Code action ([1caac40](https://github.com/inference-gateway/a2a-debugger/commit/1caac4094eb659c0ec3d7b933cbfae2d7c6d4251))
+
+### 🔧 Miscellaneous
+
+* Add CODEOWNERS file for repository ownership ([f8095ae](https://github.com/inference-gateway/a2a-debugger/commit/f8095ae3edc150f481d6b59623c5cc0bc7094ebf))
+* Add Dependabot configuration for Go modules and GitHub Actions ([83bdf16](https://github.com/inference-gateway/a2a-debugger/commit/83bdf16fe5fce466961d2ef5bc441faba10f4efc))
+* **deps:** Add lock file ([ff93b53](https://github.com/inference-gateway/a2a-debugger/commit/ff93b530d5cb6aed8d30482043b9b316b731d27f))
+* **dev-deps:** Add infer.flake flox to manifest ([a5e7b7a](https://github.com/inference-gateway/a2a-debugger/commit/a5e7b7af89e970f15d39b8aef0cebcafe276aa82))
+
+### 🔨 Miscellaneous
+
+* **deps:** Bump github/codeql-action from 3 to 4 ([#25](https://github.com/inference-gateway/a2a-debugger/issues/25)) ([975c2f7](https://github.com/inference-gateway/a2a-debugger/commit/975c2f73b22b29e820173a07516430dd952af627))
+
+## [0.8.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.1...v0.8.2) (2026-05-07)
+
+### ♻️ Improvements
+
+* **deps:** Remove devcontainer ([d346703](https://github.com/inference-gateway/a2a-debugger/commit/d34670320509905fcc5dedeecdd677432b547255))
+* **docs:** Remove redundant copilot-instructions ([7f97852](https://github.com/inference-gateway/a2a-debugger/commit/7f97852683c4931b01aecee44c458498ef517cab))
+* **types:** Consume A2A types from adk/types, drop local generation ([b929114](https://github.com/inference-gateway/a2a-debugger/commit/b9291145586ee6b78ba3b31245b345f32aa474fe))
+* Use the correct environment variables ([01ad8a9](https://github.com/inference-gateway/a2a-debugger/commit/01ad8a9ddb8a591b1e80ddd5e733ffe8f4290967))
+
+### 🐛 Bug Fixes
+
+* **streaming:** Discriminate events structurally; switch example to mock-agent ([2385de5](https://github.com/inference-gateway/a2a-debugger/commit/2385de5a9fdecd6f614497d534f5cdfbf6492fa8))
+
+### 👷 CI
+
+* Bump all actions to latest ([4b5ab22](https://github.com/inference-gateway/a2a-debugger/commit/4b5ab2248030635d0580edc1114240d9f727bdca))
+
+### 📚 Documentation
+
+* Add AGENTS.md ([ea16585](https://github.com/inference-gateway/a2a-debugger/commit/ea16585402a7c713196e6f43b86949cca72bfc8d))
+* Update CLAUDE.md for clarity on CLI command structure and testing against mock A2A server ([c54dbf2](https://github.com/inference-gateway/a2a-debugger/commit/c54dbf26621cd283a70e24f211c1034c8a045384))
+
+### 🔧 Miscellaneous
+
+* Add .env to git ignore ([68eb604](https://github.com/inference-gateway/a2a-debugger/commit/68eb604fe473cb9d64b8e6c2304a576469a9fe92))
+* **deps:** Update dependencies to latest versions (Go 1.26.2, go-task 3.48.0, claude-code 2.1.123) ([6088465](https://github.com/inference-gateway/a2a-debugger/commit/6088465db8c6457d7c6ad07991ed25c0d9741e35))
+* Remove outdated issue templates for bug, feature, and refactor requests ([8b36c50](https://github.com/inference-gateway/a2a-debugger/commit/8b36c50bc24fa297de6f9f0e5d692a3b70f59ae3))
+* Sort imports ([f4d2b72](https://github.com/inference-gateway/a2a-debugger/commit/f4d2b726f670f8fe4acb8a46923ecb8f48414b54))
+
+## [0.8.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.0...v0.8.1) (2026-05-07)
+
+### 👷 CI
+
+* Bump checkout and setup-go actions versions ([bd64aa5](https://github.com/inference-gateway/a2a-debugger/commit/bd64aa5039881c274d831b794edef099a3fada66))
+* **deps:** Bump golangci-lint to latest ([b45dce8](https://github.com/inference-gateway/a2a-debugger/commit/b45dce8428f579d32a56c78647560a9560ce65ad))
+* **deps:** Update golangci-lint installation script to use the latest version v2.12.2 ([135b290](https://github.com/inference-gateway/a2a-debugger/commit/135b2900b4c84e107f21e670a3344e8cd09cfa80))
+* Update task installation version to v3.48.0 in CI workflows ([cd0f5f7](https://github.com/inference-gateway/a2a-debugger/commit/cd0f5f7d4cd6a6bf32256d73df80d18a75a7a306))
+
+## [0.8.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.7.0...v0.8.0) (2025-10-09)
+
+### ✨ Features
+
+* **tasks:** Add --include-artifacts flag to tasks list command ([#21](https://github.com/inference-gateway/a2a-debugger/issues/21)) ([1e91d73](https://github.com/inference-gateway/a2a-debugger/commit/1e91d73fb363d8e553ecaeb16fdd4adca52d5b6b)), closes [#18](https://github.com/inference-gateway/a2a-debugger/issues/18)
+* **tasks:** Add --include-history flag to tasks list command ([#20](https://github.com/inference-gateway/a2a-debugger/issues/20)) ([6c9826f](https://github.com/inference-gateway/a2a-debugger/commit/6c9826f5d0ea93299b4713cd4057e6e8f071153c)), closes [#19](https://github.com/inference-gateway/a2a-debugger/issues/19)
+
+### 🔧 Miscellaneous
+
+* **deps:** Update create-github-app-token action to v2.1.4 ([f5afc25](https://github.com/inference-gateway/a2a-debugger/commit/f5afc2595652e7b1d6b30243dbf8bf7d48f3d2ac))
+
 ## [0.7.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.6.1...v0.7.0) (2025-10-05)
 
 ### ✨ Features
