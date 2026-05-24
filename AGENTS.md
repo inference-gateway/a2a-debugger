@@ -10,8 +10,8 @@ This file provides guidance to AI agents (Claude Code, Copilot, etc.) working wi
 
 | Technology | Purpose |
 |---|---|
-| **Go 1.26.2** | Core language — module path `github.com/inference-gateway/a2a-debugger` |
-| **[Cobra](https://github.com/spf13/cobra)** (`v1.10.2`) | CLI framework — all commands defined in `cli/cli.go` |
+| **Go 1.26.2** | Core language - module path `github.com/inference-gateway/a2a-debugger` |
+| **[Cobra](https://github.com/spf13/cobra)** (`v1.10.2`) | CLI framework - all commands defined in `cli/cli.go` |
 | **[Viper](https://github.com/spf13/viper)** (`v1.21.0`) | Configuration management (file + env + flags) |
 | **[inference-gateway/adk](https://github.com/inference-gateway/adk)** (`v0.17.3`) | A2A client library (`client.A2AClient` interface + `types` package) |
 | **[zap](https://go.uber.org/zap)** (`v1.28.0`) | Structured logging |
@@ -32,7 +32,7 @@ This file provides guidance to AI agents (Claude Code, Copilot, etc.) working wi
 
 ```
 .
-├── main.go                          # Entry point — minimal, passes ldflags vars
+├── main.go                          # Entry point - minimal, passes ldflags vars
 ├── cli/
 │   ├── cli.go                       # ALL CLI commands (single file, ~839 lines)
 │   ├── cli_test.go                  # Tests for submit-streaming command
@@ -97,35 +97,35 @@ a2a
 
 #### Core Architectural Patterns
 
-1. **`ensureA2AClient()`** — Lazy initialization of the A2A client. Must be called before any A2A RPC call. Initializes from `viper` config (`server-url`, `timeout`).
+1. **`ensureA2AClient()`** - Lazy initialization of the A2A client. Must be called before any A2A RPC call. Initializes from `viper` config (`server-url`, `timeout`).
 
-2. **`handleA2AError(err, method)`** — Centralized error handling. Detects `MethodNotFoundError` (JSON-RPC code `-32601`) and returns user-friendly messages.
+2. **`handleA2AError(err, method)`** - Centralized error handling. Detects `MethodNotFoundError` (JSON-RPC code `-32601`) and returns user-friendly messages.
 
-3. **`formatOutput(data)` / `printFormatted(data)`** — Output formatting that supports YAML (default) and JSON, controlled by the `--output` / `-o` flag or `output` config key.
+3. **`formatOutput(data)` / `printFormatted(data)`** - Output formatting that supports YAML (default) and JSON, controlled by the `--output` / `-o` flag or `output` config key.
 
-4. **`initConfig()`** — Viper init (runs via `cobra.OnInitialize`). Loads `~/.a2a.yaml` or custom config path. Environment variables are loaded automatically.
+4. **`initConfig()`** - Viper init (runs via `cobra.OnInitialize`). Loads `~/.a2a.yaml` or custom config path. Environment variables are loaded automatically.
 
-5. **`initLogger()`** — Creates a zap logger. Uses `zap.NewDevelopment()` when `--debug` is set, otherwise `zap.NewProduction()`.
+5. **`initLogger()`** - Creates a zap logger. Uses `zap.NewDevelopment()` when `--debug` is set, otherwise `zap.NewProduction()`.
 
 #### A2A Client Interface
 
 The A2A ADK (`github.com/inference-gateway/adk/client`) provides the `A2AClient` interface with these methods:
-- `GetAgentCard(ctx)` — Returns `*adk.AgentCard`
-- `GetHealth(ctx)` — Returns health info
-- `ListTasks(ctx, params)` — Returns `*adk.JSONRPCSuccessResponse`
-- `GetTask(ctx, params)` — Returns `*adk.JSONRPCSuccessResponse`
-- `SendTask(ctx, params)` — Returns `*adk.JSONRPCSuccessResponse`
-- `SendTaskStreaming(ctx, params)` — Returns `<-chan adk.JSONRPCSuccessResponse`
-- `CancelTask(ctx, params)` — Cancels a task
+- `GetAgentCard(ctx)` - Returns `*adk.AgentCard`
+- `GetHealth(ctx)` - Returns health info
+- `ListTasks(ctx, params)` - Returns `*adk.JSONRPCSuccessResponse`
+- `GetTask(ctx, params)` - Returns `*adk.JSONRPCSuccessResponse`
+- `SendTask(ctx, params)` - Returns `*adk.JSONRPCSuccessResponse`
+- `SendTaskStreaming(ctx, params)` - Returns `<-chan adk.JSONRPCSuccessResponse`
+- `CancelTask(ctx, params)` - Cancels a task
 
-Types are in `github.com/inference-gateway/adk/types` (e.g., `adk.Task`, `adk.TaskState`, `adk.Message`, `adk.Part`, `adk.AgentCard`). These are generated upstream from the A2A JSON-RPC schema — **do not modify them locally**. Bump the `adk` dependency to pick up schema changes.
+Types are in `github.com/inference-gateway/adk/types` (e.g., `adk.Task`, `adk.TaskState`, `adk.Message`, `adk.Part`, `adk.AgentCard`). These are generated upstream from the A2A JSON-RPC schema - **do not modify them locally**. Bump the `adk` dependency to pick up schema changes.
 
 ## Development Environment
 
 ### Prerequisites
 
 - **Go 1.26.2+** (matches `go.mod`)
-- **Task** (`v3.48.0`) — Build automation runner
+- **Task** (`v3.48.0`) - Build automation runner
 
 ### Environment Setup
 
@@ -231,8 +231,8 @@ os.Stdout = oldStdout
 ```
 
 **Test files:**
-- `cli/cli_test.go` — Tests for `submit-streaming` (streaming summary, raw mode, task snapshots)
-- `cli/cli_output_test.go` — Tests for `getOutputFormat`, `formatOutput`, `printFormatted`
+- `cli/cli_test.go` - Tests for `submit-streaming` (streaming summary, raw mode, task snapshots)
+- `cli/cli_output_test.go` - Tests for `getOutputFormat`, `formatOutput`, `printFormatted`
 
 **Test patterns to follow:**
 1. Save and restore global `a2aClient` and `logger` state
@@ -253,7 +253,7 @@ docker compose run --rm a2a-debugger tasks submit "Hello"            # Submit ta
 docker compose run --rm a2a-debugger tasks submit-streaming "Hi"     # Streaming task
 ```
 
-This uses `ghcr.io/inference-gateway/mock-agent:latest` — a mock A2A server that requires **no API keys**.
+This uses `ghcr.io/inference-gateway/mock-agent:latest` - a mock A2A server that requires **no API keys**.
 
 ## Adding New Commands
 
@@ -264,7 +264,7 @@ When adding new commands to `cli/cli.go`:
 3. **Use `handleA2AError(err, method)`** for error handling
 4. **Use `printFormatted(data)`** for structured output (respects `--output` format)
 5. **Register** in the `init()` function (add to parent command with `AddCommand`)
-6. **Add flags** — use global flags on `rootCmd.PersistentFlags()` or command-specific on the command itself
+6. **Add flags** - use global flags on `rootCmd.PersistentFlags()` or command-specific on the command itself
 7. **Add tests** in `cli_test.go` or `cli_output_test.go`
 8. **Document** the new command in `README.md`
 
@@ -340,7 +340,7 @@ chore(release): 🔖 0.8.1
 - **Branch from**: `main`
 - **Branch prefix**: `claude/` (when using Claude Code action)
 - **PR target**: `main`
-- **Protected**: `main` branch — no direct pushes
+- **Protected**: `main` branch - no direct pushes
 
 ### Testing Conventions
 
@@ -372,7 +372,7 @@ output: yaml  # or json
 All config keys can be set via:
 1. Config file (`~/.a2a.yaml` or `--config`)
 2. CLI flags (`--server-url`, `--timeout`, etc.)
-3. Environment variables (Viper `AutomaticEnv` — maps to `A2A_*` env vars)
+3. Environment variables (Viper `AutomaticEnv` - maps to `A2A_*` env vars)
 
 Default values:
 - `server-url`: `http://localhost:8080`
@@ -384,26 +384,26 @@ Default values:
 ### Build (`Taskfile.yaml`)
 
 The `Taskfile.yaml` defines these tasks:
-- `default` — List available tasks
-- `tidy` — `go mod tidy`
-- `lint` — `golangci-lint run`
-- `build` — Build with ldflags version injection
-- `build:dev` — Build without version info
-- `build:docker` — Docker build with version tags
-- `install` / `uninstall` — Local install/uninstall
-- `test` / `test:coverage` — Run tests
-- `clean` — Remove build artifacts
+- `default` - List available tasks
+- `tidy` - `go mod tidy`
+- `lint` - `golangci-lint run`
+- `build` - Build with ldflags version injection
+- `build:dev` - Build without version info
+- `build:docker` - Docker build with version tags
+- `install` / `uninstall` - Local install/uninstall
+- `test` / `test:coverage` - Run tests
+- `clean` - Remove build artifacts
 
 ### Docker
 
-**`Dockerfile`** — Multi-stage build (for dev/manual builds):
-1. Stage 1: `golang:1.26.2-alpine` builder — compiles binary
-2. Stage 2: `alpine:latest` — minimal runtime with CA certs
+**`Dockerfile`** - Multi-stage build (for dev/manual builds):
+1. Stage 1: `golang:1.26.2-alpine` builder - compiles binary
+2. Stage 2: `alpine:latest` - minimal runtime with CA certs
 3. Entrypoint: `/a2a`
 
-**`Dockerfile.goreleaser`** — For GoReleaser automation:
-1. Stage 1: `alpine:latest` — compresses binary with UPX
-2. Stage 2: `gcr.io/distroless/static-debian12:nonroot` — minimal, non-root
+**`Dockerfile.goreleaser`** - For GoReleaser automation:
+1. Stage 1: `alpine:latest` - compresses binary with UPX
+2. Stage 2: `gcr.io/distroless/static-debian12:nonroot` - minimal, non-root
 3. User: `nonroot:nonroot`
 
 ### CI/CD Pipeline
@@ -432,9 +432,9 @@ Managed by semantic-release (`.releaserc.yaml`):
 ### A2A ADK Dependency
 
 - **Source**: `github.com/inference-gateway/adk`
-- **Package**: `client` — A2A client interface and implementation
-- **Package**: `types` — All A2A protocol types (task, message, part, agent card, etc.)
-- **Updating**: Bump the version in `go.mod` — **no local code generation**
+- **Package**: `client` - A2A client interface and implementation
+- **Package**: `types` - All A2A protocol types (task, message, part, agent card, etc.)
+- **Updating**: Bump the version in `go.mod` - **no local code generation**
 - **Types are generated** upstream from the A2A JSON-RPC schema
 
 ### Install Script (`install.sh`)

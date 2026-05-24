@@ -16,7 +16,7 @@ A2A Debugger is a CLI tool for debugging and monitoring A2A (Agent-to-Agent) ser
 
 ### A2A Types
 
-A2A protocol types come from `github.com/inference-gateway/adk/types` (generated upstream from the A2A JSON-RPC schema). To pick up schema changes, bump the `adk` dependency rather than running a local generator — there is no local generation in this repo.
+A2A protocol types come from `github.com/inference-gateway/adk/types` (generated upstream from the A2A JSON-RPC schema). To pick up schema changes, bump the `adk` dependency rather than running a local generator - there is no local generation in this repo.
 
 ### CLI Command Structure
 
@@ -33,7 +33,7 @@ Key architectural patterns:
 
 ### Entry Point
 
-`main.go` is minimal — it passes ldflags-injected `version`/`commit`/`date` vars to `cli.Execute()`.
+`main.go` is minimal - it passes ldflags-injected `version`/`commit`/`date` vars to `cli.Execute()`.
 
 ## Common Commands
 
@@ -68,13 +68,13 @@ task tidy
 # Run the built binary
 ./dist/a2a --help
 
-# Test against a mock A2A server (no API keys required — uses ghcr.io/inference-gateway/mock-agent)
+# Test against a mock A2A server (no API keys required - uses ghcr.io/inference-gateway/mock-agent)
 cd example
 docker compose up -d
 docker compose run --rm a2a-debugger connect
 ```
 
-The `example/` directory is the canonical end-to-end harness. It boots a mock-agent A2A server and runs the debugger against it over a Docker bridge network — use it when validating behavior that depends on a real (mock) server, not just unit tests.
+The `example/` directory is the canonical end-to-end harness. It boots a mock-agent A2A server and runs the debugger against it over a Docker bridge network - use it when validating behavior that depends on a real (mock) server, not just unit tests.
 
 ### Installation
 
