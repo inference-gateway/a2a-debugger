@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 1
 
       - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@v9.2.0
+        uses: golangci/golangci-lint-action@v9.2.1
         with:
           version: v2.12.2
           args: --help
