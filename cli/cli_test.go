@@ -19,9 +19,15 @@ import (
 // mockA2AClient implements the A2AClient interface for testing
 type mockA2AClient struct {
 	sendTaskStreamingFunc func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error)
+	sendTaskFunc          func(ctx context.Context, params adk.MessageSendParams) (*adk.JSONRPCSuccessResponse, error)
+	getTaskFunc           func(ctx context.Context, params adk.TaskQueryParams) (*adk.JSONRPCSuccessResponse, error)
+	getAgentCardFunc      func(ctx context.Context) (*adk.AgentCard, error)
 }
 
 func (m *mockA2AClient) GetAgentCard(ctx context.Context) (*adk.AgentCard, error) {
+	if m.getAgentCardFunc != nil {
+		return m.getAgentCardFunc(ctx)
+	}
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -38,10 +44,16 @@ func (m *mockA2AClient) ListTasks(ctx context.Context, params adk.TaskListParams
 }
 
 func (m *mockA2AClient) GetTask(ctx context.Context, params adk.TaskQueryParams) (*adk.JSONRPCSuccessResponse, error) {
+	if m.getTaskFunc != nil {
+		return m.getTaskFunc(ctx, params)
+	}
 	return nil, fmt.Errorf("not implemented")
 }
 
 func (m *mockA2AClient) SendTask(ctx context.Context, params adk.MessageSendParams) (*adk.JSONRPCSuccessResponse, error) {
+	if m.sendTaskFunc != nil {
+		return m.sendTaskFunc(ctx, params)
+	}
 	return nil, fmt.Errorf("not implemented")
 }
 

@@ -110,6 +110,23 @@ Example summary output:
   Final Message Parts: 2
 ```
 
+### Interactive Chat Mode
+
+Interactive mode opens a terminal chat UI, so run it with an allocated TTY:
+
+```bash
+# Start a chat session in streaming (realtime) mode
+docker compose run --rm a2a-debugger interactive
+
+# Start a chat session in background (long-running task) mode
+docker compose run --rm a2a-debugger interactive --background
+
+# Resume a previous conversation by context ID
+docker compose run --rm a2a-debugger interactive --context-id my-ctx-123
+```
+
+While chatting, press `Enter` to send, `Ctrl+T` to toggle between streaming and background mode, and `Ctrl+C` to quit.
+
 ### Configuration Management
 
 ```bash

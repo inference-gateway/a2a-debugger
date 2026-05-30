@@ -22,6 +22,9 @@ services:
       - http://a2a-server:8080
     volumes:
       - ./config:/config
+    depends_on:
+      a2a-server:
+        condition: service_started
     networks:
       - a2a-network
 
