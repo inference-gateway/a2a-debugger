@@ -81,6 +81,13 @@ type agentErrorMsg struct {
 	err error
 }
 
+// tasksListedMsg carries the result of an in-chat /tasks command.
+type tasksListedMsg struct {
+	tasks []adk.Task
+	all   bool
+	err   error
+}
+
 // --- styles ---
 
 var (
@@ -144,8 +151,6 @@ func newInteractiveModel(mode chatMode, serverURL, agentName, contextID string) 
 		contextID: contextID,
 		replyIdx:  -1,
 	}
-	m.addLine(senderSystem, fmt.Sprintf("connected to %s · %s mode · context %s", serverURL, mode.String(), shortID(contextID)))
-	m.addLine(senderSystem, "type a message and press Enter to begin")
 	return m
 }
 
@@ -179,6 +184,12 @@ func (m interactiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlT:
 			if !m.waiting {
 				m.toggleMode()
+				m.refreshViewport()
+			}
+			return m, nil
+		case tea.KeyCtrlL:
+			if !m.waiting {
+				m.clearTranscript()
 				m.refreshViewport()
 			}
 			return m, nil
@@ -225,6 +236,16 @@ func (m interactiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshViewport()
 		return m, nil
 
+	case tasksListedMsg:
+		m.waiting = false
+		if msg.err != nil {
+			m.addLine(senderSystem, "⚠ "+msg.err.Error())
+		} else {
+			m.renderTaskList(msg.tasks, msg.all)
+		}
+		m.refreshViewport()
+		return m, nil
+
 	case spinner.TickMsg:
 		if !m.waiting {
 			return m, nil
@@ -244,6 +265,10 @@ func (m interactiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m interactiveModel) submit(text string) (tea.Model, tea.Cmd) {
+	if strings.HasPrefix(text, "/") {
+		return m.handleSlashCommand(text)
+	}
+
 	m.addLine(senderUser, text)
 	m.input.Reset()
 	m.waiting = true
@@ -258,6 +283,34 @@ func (m interactiveModel) submit(text string) (tea.Model, tea.Cmd) {
 	m.agentBuf = ""
 	m.replyIdx = -1
 	return m, tea.Batch(m.spinner.Tick, startStreamCmd(params))
+}
+
+func (m interactiveModel) handleSlashCommand(text string) (tea.Model, tea.Cmd) {
+	m.input.Reset()
+	fields := strings.Fields(text)
+	cmd := strings.ToLower(fields[0])
+	args := fields[1:]
+
+	switch cmd {
+	case "/tasks":
+		all := false
+		for _, a := range args {
+			if a == "all" || a == "--all" {
+				all = true
+			}
+		}
+		m.waiting = true
+		m.refreshViewport()
+		return m, tea.Batch(m.spinner.Tick, listTasksForChatCmd(m.contextID, all, 20))
+	case "/help":
+		m.addLine(senderSystem, "commands: /tasks [all] · /help")
+		m.refreshViewport()
+		return m, nil
+	default:
+		m.addLine(senderSystem, "unknown command: "+cmd+" (try /help)")
+		m.refreshViewport()
+		return m, nil
+	}
 }
 
 func (m interactiveModel) buildParams(text string) adk.MessageSendParams {
@@ -386,6 +439,39 @@ func (m *interactiveModel) applyFinalTask(task adk.Task) {
 	}
 }
 
+func (m *interactiveModel) renderTaskList(tasks []adk.Task, all bool) {
+	var header string
+	if all {
+		header = fmt.Sprintf("📋 Tasks (all contexts, %d):", len(tasks))
+	} else {
+		header = fmt.Sprintf("📋 Tasks in context %s (%d):", shortID(m.contextID), len(tasks))
+	}
+	m.addLine(senderSystem, header)
+	if len(tasks) == 0 {
+		m.addLine(senderSystem, "  (none)")
+		return
+	}
+	for _, t := range tasks {
+		state := humanState(t.Status.State)
+		line := fmt.Sprintf("  %s · %s", shortID(t.ID), state)
+		if t.Status.Message != nil {
+			if preview := strings.TrimSpace(partsToText(t.Status.Message.Parts)); preview != "" {
+				if len(preview) > 60 {
+					preview = preview[:60] + "…"
+				}
+				line += " · " + preview
+			}
+		}
+		m.addLine(senderSystem, line)
+	}
+}
+
+func (m *interactiveModel) clearTranscript() {
+	m.lines = nil
+	m.agentBuf = ""
+	m.replyIdx = -1
+}
+
 func (m *interactiveModel) toggleMode() {
 	if m.mode == modeStreaming {
 		m.mode = modeBackground
@@ -465,7 +551,7 @@ func (m interactiveModel) footerView() string {
 	} else {
 		status = dimStyle.Render("ready")
 	}
-	help := dimStyle.Render("enter: send · ctrl+t: toggle mode · ctrl+c: quit")
+	help := dimStyle.Render("enter: send · /tasks: list · ctrl+t: toggle mode · ctrl+l: clear · ctrl+c: quit")
 	return strings.Join([]string{status, m.input.View(), help}, "\n")
 }
 
@@ -506,6 +592,28 @@ func submitBackgroundCmd(params adk.MessageSendParams) tea.Cmd {
 			return agentErrorMsg{err: err}
 		}
 		return taskSubmittedMsg{taskID: task.ID, contextID: task.ContextID}
+	}
+}
+
+func listTasksForChatCmd(contextID string, all bool, limit int) tea.Cmd {
+	return func() tea.Msg {
+		params := adk.TaskListParams{Limit: limit}
+		if !all {
+			params.ContextID = &contextID
+		}
+		resp, err := a2aClient.ListTasks(context.Background(), params)
+		if err != nil {
+			return tasksListedMsg{err: handleA2AError(err, "tasks/list"), all: all}
+		}
+		b, err := json.Marshal(resp.Result)
+		if err != nil {
+			return tasksListedMsg{err: fmt.Errorf("failed to marshal task list: %w", err), all: all}
+		}
+		var list adk.TaskList
+		if err := json.Unmarshal(b, &list); err != nil {
+			return tasksListedMsg{err: fmt.Errorf("failed to unmarshal task list: %w", err), all: all}
+		}
+		return tasksListedMsg{tasks: list.Tasks, all: all}
 	}
 }
 
@@ -588,7 +696,8 @@ func runInteractiveChat(mode chatMode, contextID string) error {
 
 	agentName := "Agent"
 	streamingSupported := true
-	if card, err := a2aClient.GetAgentCard(context.Background()); err == nil && card != nil {
+	card, cardErr := a2aClient.GetAgentCard(context.Background())
+	if cardErr == nil && card != nil {
 		if card.Name != "" {
 			agentName = card.Name
 		}
@@ -597,10 +706,17 @@ func runInteractiveChat(mode chatMode, contextID string) error {
 		}
 	}
 
-	model := newInteractiveModel(mode, viper.GetString("server-url"), agentName, contextID)
+	serverURL := viper.GetString("server-url")
+	model := newInteractiveModel(mode, serverURL, agentName, contextID)
+	if cardErr != nil {
+		model.addLine(senderSystem, "⚠ failed to reach agent: "+handleA2AError(cardErr, "agent/card").Error())
+	} else {
+		model.addLine(senderSystem, fmt.Sprintf("connected to %s · %s mode · context %s", serverURL, mode.String(), shortID(model.contextID)))
+	}
 	if mode == modeStreaming && !streamingSupported {
 		model.addLine(senderSystem, "⚠ agent does not advertise streaming support; responses may not stream")
 	}
+	model.addLine(senderSystem, "type a message and press Enter to begin")
 
 	program := tea.NewProgram(model, tea.WithAltScreen())
 	_, err := program.Run()
