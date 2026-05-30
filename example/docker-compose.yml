@@ -9,10 +9,7 @@ services:
       - a2a-network
 
   a2a-debugger:
-    # image: ghcr.io/inference-gateway/a2a-debugger:latest
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/inference-gateway/a2a-debugger:latest
     pull_policy: always
     entrypoint:
       - /a2a
