@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.4...v0.9.0) (2026-05-30)
+
+### ✨ Features
+
+* add interactive chat mode ([#34](https://github.com/inference-gateway/a2a-debugger/issues/34)) ([27da191](https://github.com/inference-gateway/a2a-debugger/commit/27da191f4b421da9a323306358ffc4fef935d326))
+
+### 👷 CI
+
+* centralize claude.yml via reusable workflow ([#33](https://github.com/inference-gateway/a2a-debugger/issues/33)) ([6b37c6f](https://github.com/inference-gateway/a2a-debugger/commit/6b37c6fe0bc4bb698218a56f7d51c72aab0d95dd))
+* **claude:** change effort to max ([ec61170](https://github.com/inference-gateway/a2a-debugger/commit/ec611700cd100bcae5412100e290f7d72fc2c605))
+* **claude:** download all maintainer skill assets ([dd7638a](https://github.com/inference-gateway/a2a-debugger/commit/dd7638a2b33d38e8beebab8f8235569b5670c03e))
+* **claude:** standardize workflow + task-based branch prefix ([0678e8d](https://github.com/inference-gateway/a2a-debugger/commit/0678e8d11a43a5bd5a0311b50f7f299760456b22))
+* **deps:** Bump claude-code-action  v1.0.131 -> v1.0.133 ([990a29a](https://github.com/inference-gateway/a2a-debugger/commit/990a29a32bd762475623187e95ebf71e29f8f261))
+
+### 🔧 Miscellaneous
+
+* Add infer new configurations and codex agent ([c00b918](https://github.com/inference-gateway/a2a-debugger/commit/c00b918aaad6eae0429041de3656d71b24aea251))
+* Delete AGENTS.md ([5857b66](https://github.com/inference-gateway/a2a-debugger/commit/5857b66893e7b053c7cd0a0b1d1e7e0ea0ee36e5))
+* **deps:** Bump claude-code version ^2.1.141 -> ^2.1.148 ([f07a7f1](https://github.com/inference-gateway/a2a-debugger/commit/f07a7f1a900c84971afaf90a984a0efaea7b2839))
+* **docs:** Generate AGENTS.md file ([ee53447](https://github.com/inference-gateway/a2a-debugger/commit/ee53447a02b3699d04ebd964316d9ef2b6902604))
+* **flox:** Bump dev dependecies ([2477872](https://github.com/inference-gateway/a2a-debugger/commit/247787216e47f817e40a1a799a6c44973478b1b8))
+* **flox:** Bump schema version ([6793adc](https://github.com/inference-gateway/a2a-debugger/commit/6793adc44eb5e19930885dc099c658a7b3ffdd1f))
+* Generate CLAUDE.md file ([79d792c](https://github.com/inference-gateway/a2a-debugger/commit/79d792c0cdbdaa10e0f9439b8df3c18d3b4b05eb))
+* Remove CLAUDE.md file ([f7c7cc3](https://github.com/inference-gateway/a2a-debugger/commit/f7c7cc36272f875b0a616afdc28754675a5ab2aa))
+* Replace em dashes with normal dashes ([5a74871](https://github.com/inference-gateway/a2a-debugger/commit/5a74871b669348b84f4b53878f7ee742057c2eb6))
+* Run infer init --overwrite ([3f3a840](https://github.com/inference-gateway/a2a-debugger/commit/3f3a84001070c01ae1939fce34b6897b39ffbccf))
+
+### 🔨 Miscellaneous
+
+* **deps:** bump github.com/inference-gateway/adk in the gomod group ([#31](https://github.com/inference-gateway/a2a-debugger/issues/31)) ([7bbb486](https://github.com/inference-gateway/a2a-debugger/commit/7bbb4865b9420332d9f049c7e50cd585b33e51ce))
+* **deps:** Bump the github-actions group with 3 updates ([#32](https://github.com/inference-gateway/a2a-debugger/issues/32)) ([c20e3c8](https://github.com/inference-gateway/a2a-debugger/commit/c20e3c8014989514730f9f2bc77e48febf2558c9))
+
 ## [0.8.4](https://github.com/inference-gateway/a2a-debugger/compare/v0.8.3...v0.8.4) (2026-05-24)
 
 ### 👷 CI
