@@ -27,6 +27,7 @@ A powerful command-line utility for debugging, monitoring, and inspecting A2A se
 - **Task Management**: List, filter, and inspect tasks with detailed status information
 - **Real-time Streaming**: Submit streaming tasks and monitor real-time agent responses
 - **Streaming Summaries**: Summaries with Task IDs, durations, and event counts
+- **Interactive Chat Mode**: A terminal chat UI (built with Bubble Tea) to converse with an agent in streaming or background mode
 - **Conversation History**: View detailed conversation histories and message flows
 - **Agent Information**: Retrieve and display agent cards with capabilities
 - **Configuration Management**: Set, get, and list configuration values with namespace commands
@@ -140,6 +141,14 @@ a2a connect                     # Test connection to A2A server
 a2a agent-card                  # Get agent card information
 ```
 
+#### Interactive Mode
+
+```bash
+a2a interactive                 # Start a chat session (streaming mode)
+a2a interactive --background    # Start a chat session in background (long-running task) mode
+a2a chat                        # Alias for "a2a interactive"
+```
+
 ### Configuration
 
 Create a configuration file at `~/.a2a.yaml`:
@@ -174,6 +183,11 @@ output: yaml  # or json
 #### Task Get Options
 
 - `--history-length`: Number of history messages to include
+
+#### Interactive Mode Options
+
+- `--background, -b`: Use background (long-running task) mode instead of streaming (default: false)
+- `--context-id`: Resume an existing context ID (optional; a new one is generated otherwise)
 
 ### Examples
 
@@ -283,6 +297,46 @@ Task: task-abc123 (Status: completed)
   2. [assistant] msg-456
      1: Hello! How can I help you today?
 ```
+
+#### Interactive chat mode
+
+Start a chat session to converse with the agent directly from your terminal. By default messages
+are exchanged in **streaming** mode, where the agent's reply is rendered in real time:
+
+```bash
+$ a2a interactive --server-url http://localhost:8080
+```
+
+```text
+ A2A Chat  http://localhost:8080 · streaming · context 1a2b3c4d
+
+You
+  What's the weather like today?
+
+My A2A Agent
+  It's sunny with a high of 24°C.
+
+ready
+> ▏
+enter: send · ctrl+t: toggle mode · ctrl+c: quit
+```
+
+Use **background** mode for long-running tasks. Each message is submitted as a task and polled
+until it reaches a terminal state:
+
+```bash
+$ a2a interactive --background
+```
+
+Key bindings:
+
+- `Enter` — send the current message
+- `Ctrl+T` — toggle between streaming and background mode mid-session
+- `Ctrl+C` / `Esc` — quit
+
+The session keeps a single context ID so the whole conversation is threaded. When the agent
+responds with `input-required`, your next message automatically continues the same task. You can
+also resume a previous conversation with `--context-id <id>`.
 
 #### Output Formats
 

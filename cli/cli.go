@@ -107,6 +107,7 @@ func init() {
 	rootCmd.AddCommand(tasksCmd)
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(agentCardCmd)
+	rootCmd.AddCommand(interactiveCmd)
 	rootCmd.AddCommand(versionCmd)
 
 	listTasksCmd.Flags().String("state", "", "Filter by task state (submitted, working, completed, failed)")
@@ -121,6 +122,8 @@ func init() {
 	submitStreamingTaskCmd.Flags().String("context-id", "", "Context ID for the task (optional, will generate new context if not provided)")
 	submitStreamingTaskCmd.Flags().String("task-id", "", "Task ID to resume (optional)")
 	submitStreamingTaskCmd.Flags().Bool("raw", false, "Show raw streaming event data instead of formatted output")
+	interactiveCmd.Flags().BoolP("background", "b", false, "Use background (long-running task) mode instead of streaming")
+	interactiveCmd.Flags().String("context-id", "", "Resume an existing context ID (optional, a new one is generated otherwise)")
 }
 
 func initConfig() {
@@ -516,6 +519,28 @@ var agentCardCmd = &cobra.Command{
 		}
 
 		return printFormatted(agentCard)
+	},
+}
+
+var interactiveCmd = &cobra.Command{
+	Use:     "interactive",
+	Aliases: []string{"chat"},
+	Short:   "Start an interactive chat session with the A2A server",
+	Long: `Opens a terminal chat interface for conversing with an A2A server.
+
+By default messages are exchanged in streaming (realtime) mode. Use --background
+to submit each message as a long-running task that is polled until it completes.
+Press Ctrl+T to switch modes during a session and Ctrl+C to quit.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		background, _ := cmd.Flags().GetBool("background")
+		contextID, _ := cmd.Flags().GetString("context-id")
+
+		mode := modeStreaming
+		if background {
+			mode = modeBackground
+		}
+
+		return runInteractiveChat(mode, contextID)
 	},
 }
 
