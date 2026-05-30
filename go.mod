@@ -3,7 +3,7 @@ module github.com/inference-gateway/a2a-debugger
 go 1.26.2
 
 require (
-	github.com/inference-gateway/adk v0.18.1
+	github.com/inference-gateway/adk v0.19.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	go.uber.org/zap v1.28.0
