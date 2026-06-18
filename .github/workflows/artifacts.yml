@@ -38,7 +38,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v7.2.2
         with:
           install-only: true
-          version: v2.15.4
+          version: v2.16.0
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4.2.0
