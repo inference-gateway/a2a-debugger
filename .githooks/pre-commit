@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+
+gofmt -l . | grep . && { echo "gofmt: files above need formatting"; exit 1; }
+task lint

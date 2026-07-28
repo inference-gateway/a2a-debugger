@@ -15,6 +15,7 @@ Build automation goes through [Task](https://taskfile.dev/), not `make`:
 | `task build`      | Builds `dist/a2a` with version/commit/date injected via `-ldflags -X main.{version,commit,date}` |
 | `task build:dev`  | Plain `go build` (no ldflags) — faster iteration                                              |
 | `task test`       | `go test ./...`                                                                               |
+| `task test:coverage` | `go test -cover ./...`                                                                     |
 | `task lint`       | `golangci-lint run` (CI pins v2.12.2)                                                         |
 | `task tidy`       | `find . -name go.mod -execdir go mod tidy \;` — run before pushing (see CI note below)        |
 | `task install`    | `go install .` to `$GOPATH/bin`                                                               |
@@ -40,6 +41,10 @@ Try the binary against a real server end-to-end via `example/docker-compose.yml`
 
 **Test pattern.** Tests in `cli/cli_test.go` swap the `a2aClient` package-global with a `mockA2AClient` that satisfies `client.A2AClient`. Always save and restore the original (`originalClient := a2aClient` ... `defer`/end: `a2aClient = originalClient`). Output assertions capture stdout via an `os.Pipe()` swap of `os.Stdout` — follow the same pattern for new command tests so they remain hermetic.
 
+## Coding style
+
+Follow normal Go style: `gofmt` formatting, tabs for indentation, short package names, and exported identifiers only when needed outside their package. Keep CLI behavior centralized in `cli/cli.go` unless a larger split is clearly justified.
+
 ## Conventions to honor
 
 - **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor, `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch, breaking changes → major. Use capitalized descriptions (`feat(client): Add retry mechanism`). `chore(release): ...` is reserved for the release bot.
@@ -47,6 +52,8 @@ Try the binary against a real server end-to-end via `example/docker-compose.yml`
 - **Go version is pinned in `go.mod` (1.26.2).** CI uses `go-version-file: 'go.mod'` — bump `go.mod` if you need a newer toolchain.
 - **The `a2a/generated_types.go` path is marked `linguist-generated`** in `.gitattributes` (the path is anticipatory — no such file exists today, but treat any future generated file as not-for-hand-editing).
 - **Default config file is `~/.a2a.yaml`**, loaded by viper in `initConfig()`. Env vars are picked up via `viper.AutomaticEnv()` (so `SERVER_URL=...` overrides `server-url`).
+- **PRs** should describe the change, list tests run, link related issues, and include terminal output or screenshots when CLI behavior changes. Run `task test` before opening a PR.
+- **Security:** avoid committing local config, credentials, or server URLs not meant for public examples. Use `--insecure` only for local or test servers.
 
 ## Release flow
 
