@@ -50,6 +50,16 @@ type chatLine struct {
 	text   string
 }
 
+// sessionState holds per-session state for multi-session support.
+type sessionState struct {
+	contextID  string
+	lastTaskID string
+	lastState  adk.TaskState
+	lines      []chatLine
+	agentBuf   string
+	replyIdx   int
+}
+
 // --- Bubble Tea messages ---
 
 // streamStartedMsg carries the channel returned by SendTaskStreaming.
@@ -116,6 +126,9 @@ type interactiveModel struct {
 	lastTaskID string
 	lastState  adk.TaskState
 
+	sessions      map[string]*sessionState
+	activeSession string
+
 	waiting  bool
 	agentBuf string
 	replyIdx int
@@ -143,13 +156,20 @@ func newInteractiveModel(mode chatMode, serverURL, agentName, contextID string) 
 	}
 
 	m := interactiveModel{
-		input:     ti,
-		spinner:   sp,
-		mode:      mode,
-		serverURL: serverURL,
-		agentName: agentName,
-		contextID: contextID,
-		replyIdx:  -1,
+		input:   ti,
+		spinner: sp,
+		mode:    mode,
+		sessions: map[string]*sessionState{
+			contextID: {
+				contextID: contextID,
+				replyIdx:  -1,
+			},
+		},
+		activeSession: contextID,
+		serverURL:     serverURL,
+		agentName:     agentName,
+		contextID:     contextID,
+		replyIdx:      -1,
 	}
 	return m
 }
@@ -302,8 +322,58 @@ func (m interactiveModel) handleSlashCommand(text string) (tea.Model, tea.Cmd) {
 		m.waiting = true
 		m.refreshViewport()
 		return m, tea.Batch(m.spinner.Tick, listTasksForChatCmd(m.contextID, all, 20))
+	case "/sessions":
+		var b strings.Builder
+		fmt.Fprintf(&b, "sessions (%d):", len(m.sessions))
+		for id := range m.sessions {
+			mark := " "
+			if id == m.activeSession {
+				mark = "*"
+			}
+			fmt.Fprintf(&b, "\n  %s %s", mark, shortID(id))
+		}
+		m.addLine(senderSystem, b.String())
+		m.refreshViewport()
+		return m, nil
+	case "/session":
+		if len(args) == 0 {
+			m.addLine(senderSystem, "usage: /session <id> (use /sessions to list)")
+			m.refreshViewport()
+			return m, nil
+		}
+		target := args[0]
+		if _, ok := m.sessions[target]; !ok {
+			// accept the short id shown by /sessions
+			for id := range m.sessions {
+				if strings.HasPrefix(id, target) {
+					target = id
+					break
+				}
+			}
+		}
+		if _, ok := m.sessions[target]; !ok {
+			m.addLine(senderSystem, "session not found: "+args[0])
+			m.refreshViewport()
+			return m, nil
+		}
+		m.saveSession()
+		m.loadSession(target)
+		m.addLine(senderSystem, "switched to session "+shortID(target))
+		m.refreshViewport()
+		return m, nil
+	case "/new":
+		newID := uuid.NewString()
+		m.saveSession()
+		m.sessions[newID] = &sessionState{
+			contextID: newID,
+			replyIdx:  -1,
+		}
+		m.loadSession(newID)
+		m.addLine(senderSystem, "new session created: "+shortID(newID))
+		m.refreshViewport()
+		return m, nil
 	case "/help":
-		m.addLine(senderSystem, "commands: /tasks [all] · /help")
+		m.addLine(senderSystem, "commands: /tasks [all] · /sessions · /session <id> · /new · /help")
 		m.refreshViewport()
 		return m, nil
 	default:
@@ -329,6 +399,33 @@ func (m interactiveModel) buildParams(text string) adk.MessageSendParams {
 		params.Message.TaskID = &taskID
 	}
 	return params
+}
+
+// saveSession persists the current model state into the active session's state struct.
+func (m *interactiveModel) saveSession() {
+	if s, ok := m.sessions[m.activeSession]; ok {
+		s.contextID = m.contextID
+		s.lastTaskID = m.lastTaskID
+		s.lastState = m.lastState
+		s.lines = m.lines
+		s.agentBuf = m.agentBuf
+		s.replyIdx = m.replyIdx
+	}
+}
+
+// loadSession loads a session's state into the model fields.
+func (m *interactiveModel) loadSession(id string) {
+	s, ok := m.sessions[id]
+	if !ok {
+		return
+	}
+	m.activeSession = id
+	m.contextID = s.contextID
+	m.lastTaskID = s.lastTaskID
+	m.lastState = s.lastState
+	m.lines = s.lines
+	m.agentBuf = s.agentBuf
+	m.replyIdx = s.replyIdx
 }
 
 func (m *interactiveModel) applyStreamEvent(resp adk.JSONRPCSuccessResponse) {
@@ -540,7 +637,11 @@ func (m *interactiveModel) renderConversation() string {
 
 func (m interactiveModel) headerView() string {
 	title := titleStyle.Render("A2A Chat")
-	meta := metaStyle.Render(fmt.Sprintf("%s · %s · context %s", m.serverURL, m.mode.String(), shortID(m.contextID)))
+	sessionLabel := shortID(m.activeSession)
+	if len(m.sessions) > 1 {
+		sessionLabel = fmt.Sprintf("%s [%d sessions]", shortID(m.activeSession), len(m.sessions))
+	}
+	meta := metaStyle.Render(fmt.Sprintf("%s · %s · session %s", m.serverURL, m.mode.String(), sessionLabel))
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, " ", meta)
 }
 
