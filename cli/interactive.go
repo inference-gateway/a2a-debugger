@@ -343,7 +343,16 @@ func (m interactiveModel) handleSlashCommand(text string) (tea.Model, tea.Cmd) {
 		}
 		target := args[0]
 		if _, ok := m.sessions[target]; !ok {
-			m.addLine(senderSystem, "session not found: "+target)
+			// accept the short id shown by /sessions
+			for id := range m.sessions {
+				if strings.HasPrefix(id, target) {
+					target = id
+					break
+				}
+			}
+		}
+		if _, ok := m.sessions[target]; !ok {
+			m.addLine(senderSystem, "session not found: "+args[0])
 			m.refreshViewport()
 			return m, nil
 		}

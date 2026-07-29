@@ -126,3 +126,37 @@ func TestMultiSession_NoStateBleed(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiSession_ShortIDLookup(t *testing.T) {
+	m := newInteractiveModel(modeStreaming, "http://mock:8080", "MockAgent", "ctx-A")
+	mi, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = mi.(interactiveModel)
+
+	// Create a new session with a UUID (like /new does).
+	mi, _ = m.handleSlashCommand("/new")
+	m = mi.(interactiveModel)
+
+	// The new session has a UUID; find its short ID.
+	var newShortID string
+	var newFullID string
+	for id := range m.sessions {
+		if id != "ctx-A" {
+			newFullID = id
+			newShortID = shortID(id)
+			break
+		}
+	}
+	if newShortID == "" {
+		t.Fatal("no new session found")
+	}
+
+	// Switch back to A, then back to the new session using its short ID.
+	mi, _ = m.handleSlashCommand("/session ctx-A")
+	m = mi.(interactiveModel)
+
+	mi, _ = m.handleSlashCommand("/session " + newShortID)
+	m = mi.(interactiveModel)
+	if m.activeSession != newFullID {
+		t.Errorf("short ID lookup: active = %q, want %q", m.activeSession, newFullID)
+	}
+}
