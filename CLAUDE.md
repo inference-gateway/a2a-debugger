@@ -49,7 +49,7 @@ Follow normal Go style: `gofmt` formatting, tabs for indentation, short package 
 
 - **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor, `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch, breaking changes → major. Use capitalized descriptions (`feat(client): Add retry mechanism`). `chore(release): ...` is reserved for the release bot.
 - **CI fails on dirty `go.mod` after `task tidy`.** The CI job runs `task tidy` then `git diff --exit-code`. Always run `task tidy` locally before committing dependency changes.
-- **Go version is pinned in `go.mod` (1.26.2).** CI uses `go-version-file: 'go.mod'` — bump `go.mod` if you need a newer toolchain.
+- **Go version is pinned in `go.mod` (1.26.7).** CI uses `go-version-file: 'go.mod'` — bump `go.mod` if you need a newer toolchain.
 - **The `a2a/generated_types.go` path is marked `linguist-generated`** in `.gitattributes` (the path is anticipatory — no such file exists today, but treat any future generated file as not-for-hand-editing).
 - **Default config file is `~/.a2a.yaml`**, loaded by viper in `initConfig()`. Env vars are picked up via `viper.AutomaticEnv()` (so `SERVER_URL=...` overrides `server-url`).
 - **PRs** should describe the change, list tests run, link related issues, and include terminal output or screenshots when CLI behavior changes. Run `task test` before opening a PR.
