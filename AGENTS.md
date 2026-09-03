@@ -34,7 +34,7 @@ Tests in `cli/cli_test.go` swap the `a2aClient` package-global with a `mockA2ACl
 ## Conventions
 
 - **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor; `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch; breaking → major. Capitalized descriptions (`feat(client): Add retry mechanism`). `chore(release):` is reserved for the release bot.
-- **Go version is pinned in `go.mod` (1.26.4)**; CI reads it via `go-version-file`.
+- **Go version is pinned in `go.mod` (1.26.7)**; CI reads it via `go-version-file`.
 - **Config is `~/.a2a.yaml`**, loaded by viper; `viper.AutomaticEnv()` means `SERVER_URL=...` overrides `server-url`.
 - **Security:** never commit local config, credentials, or private server URLs. Use `--insecure` only for local or test servers.
 
