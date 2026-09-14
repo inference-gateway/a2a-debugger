@@ -23,6 +23,8 @@ type mockA2AClient struct {
 	sendTaskFunc          func(ctx context.Context, params types.MessageSendParams) (*types.JSONRPCSuccessResponse, error)
 	getTaskFunc           func(ctx context.Context, params types.TaskQueryParams) (*types.JSONRPCSuccessResponse, error)
 	getAgentCardFunc      func(ctx context.Context) (*types.AgentCard, error)
+
+	getAuthenticatedExtendedCardFunc func(ctx context.Context, params types.GetAuthenticatedExtendedCardParams) (*types.JSONRPCSuccessResponse, error)
 }
 
 func (m *mockA2AClient) GetAgentCard(ctx context.Context) (*types.AgentCard, error) {
@@ -33,6 +35,9 @@ func (m *mockA2AClient) GetAgentCard(ctx context.Context) (*types.AgentCard, err
 }
 
 func (m *mockA2AClient) GetAuthenticatedExtendedCard(ctx context.Context, params types.GetAuthenticatedExtendedCardParams) (*types.JSONRPCSuccessResponse, error) {
+	if m.getAuthenticatedExtendedCardFunc != nil {
+		return m.getAuthenticatedExtendedCardFunc(ctx, params)
+	}
 	return nil, fmt.Errorf("not implemented")
 }
 
