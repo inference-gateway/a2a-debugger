@@ -19,13 +19,15 @@ Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try th
 
 ## Architecture
 
-**Single-package CLI.** All commands, flag wiring, viper bindings, output helpers, and the JSON-RPC error normalizer live in `cli/cli.go`; `main.go` is just `cli.Execute(version, commit, date)`. Add a command by declaring `var fooCmd = &cobra.Command{...}` in `cli.go`, registering it in `init()` under `tasksCmd` or `rootCmd`, and wiring flags there. Namespaces: `config` (set/get/list, viper-backed) and `tasks` (list/get/history/submit/submit-streaming); `connect`, `agent-card`, and `version` sit on root.
+**Single-package CLI.** All commands, flag wiring, viper bindings, output helpers, and the JSON-RPC error normalizer live in `cli/cli.go`; `main.go` is just `cli.Execute(version, commit, date)`. Add a command by declaring `var fooCmd = &cobra.Command{...}` in `cli.go`, registering it in `init()` under `tasksCmd` or `rootCmd`, and wiring flags there. Namespaces: `config` (set/get/list, viper-backed) and `tasks` (list/get/history/submit/submit-streaming); `connect`, `agent-card`, `auth`, `interactive`, and `version` sit on root.
 
 **Lazy A2A client.** The `a2aClient` package-global stays `nil` until `ensureA2AClient()` is called inside a command's `RunE`. Never call `initA2AClient()` at package init — it needs viper config and the logger.
 
 **Output is centralized.** Always render through `printFormatted(data)` so `--output yaml|json` is honored; never `fmt.Println(yaml.Marshal(...))`. In `submit-streaming`, freeform progress prints directly and only the final summary goes through formatted output.
 
-**JSON-RPC errors.** Wrap every `a2aClient.*` error with `handleA2AError(err, methodName)` so code `-32601` becomes "Method not implemented by the agent". Streaming events are heuristically typed in `submit-streaming` by probing for `artifact`/`final`/`id` keys — update that switch when ADK adds event kinds.
+**JSON-RPC errors.** Wrap every `a2aClient.*` error with `handleA2AError(err, methodName)` so code `-32601` becomes "Method not implemented by the agent" (also maps `-32004`, `-32007`, and HTTP `401`).
+
+**Authentication.** The global `--token` / `--auth-header` flags are viper-bound; `initA2AClient()` puts the credential in `client.Config.Headers` via `authHeader()`, so every command inherits it. `GetAgentCard` / `GetHealth` deliberately stay unauthenticated (public endpoints). Streaming events are heuristically typed in `submit-streaming` by probing for `artifact`/`final`/`id` keys — update that switch when ADK adds event kinds.
 
 ## Testing
 
