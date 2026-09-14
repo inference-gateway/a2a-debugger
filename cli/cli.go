@@ -67,30 +67,13 @@ func init() {
 	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug logging")
 	rootCmd.PersistentFlags().Bool("insecure", false, "Skip TLS verification")
 	rootCmd.PersistentFlags().StringP("output", "o", "yaml", "Output format (yaml|json)")
+	rootCmd.PersistentFlags().String("token", "", "Bearer token (or credential value) sent to the A2A server")
+	rootCmd.PersistentFlags().String("auth-header", "Authorization", "Header carrying the credential")
 
-	err := viper.BindPFlag("server-url", rootCmd.PersistentFlags().Lookup("server-url"))
-	if err != nil {
-		log.Fatalf("bind error: %v", err)
-	}
-
-	err = viper.BindPFlag("timeout", rootCmd.PersistentFlags().Lookup("timeout"))
-	if err != nil {
-		log.Fatalf("bind error: %v", err)
-	}
-
-	err = viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
-	if err != nil {
-		log.Fatalf("bind error: %v", err)
-	}
-
-	err = viper.BindPFlag("insecure", rootCmd.PersistentFlags().Lookup("insecure"))
-	if err != nil {
-		log.Fatalf("bind error: %v", err)
-	}
-
-	err = viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
-	if err != nil {
-		log.Fatalf("bind error: %v", err)
+	for _, key := range []string{"server-url", "timeout", "debug", "insecure", "output", "token", "auth-header"} {
+		if err := viper.BindPFlag(key, rootCmd.PersistentFlags().Lookup(key)); err != nil {
+			log.Fatalf("bind error: %v", err)
+		}
 	}
 
 	configCmd.AddCommand(configSetCmd)
@@ -106,6 +89,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(tasksCmd)
 	rootCmd.AddCommand(connectCmd)
+	rootCmd.AddCommand(authCmd)
 	rootCmd.AddCommand(agentCardCmd)
 	rootCmd.AddCommand(interactiveCmd)
 	rootCmd.AddCommand(versionCmd)
@@ -166,8 +150,31 @@ func initA2AClient() {
 	config.Timeout = timeout
 	config.Logger = logger
 
+	if name, value := authHeader(); name != "" {
+		config.Headers[name] = value
+	}
+
 	a2aClient = client.NewClientWithConfig(config)
 	logger.Debug("A2A client initialized", zap.String("server_url", serverURL))
+}
+
+// authHeader returns the credential header name and value, or empty strings when no token is configured
+func authHeader() (string, string) {
+	token := viper.GetString("token")
+	if token == "" {
+		return "", ""
+	}
+
+	name := viper.GetString("auth-header")
+	if name == "" {
+		name = "Authorization"
+	}
+
+	if strings.EqualFold(name, "Authorization") && !strings.HasPrefix(token, "Bearer ") {
+		token = "Bearer " + token
+	}
+
+	return name, token
 }
 
 // ensureA2AClient initializes the A2A client if it hasn't been initialized yet
@@ -177,7 +184,7 @@ func ensureA2AClient() {
 	}
 }
 
-// handleA2AError checks if the error is a MethodNotFoundError and returns a user-friendly message
+// handleA2AError turns known JSON-RPC / HTTP failures into user-friendly messages
 func handleA2AError(err error, method string) error {
 	if err == nil {
 		return nil
@@ -185,24 +192,32 @@ func handleA2AError(err error, method string) error {
 
 	errStr := err.Error()
 
-	if strings.Contains(errStr, "MethodNotFoundError") || strings.Contains(errStr, "-32601") {
-		displayMethod := method
-		if displayMethod == "" {
-			displayMethod = "method"
-		}
-
-		return fmt.Errorf("❌ Method '%s' not implemented by the agent", displayMethod)
-	}
-
+	code := 0
 	var jsonErr struct {
 		Error *adk.JSONRPCError `json:"error,omitempty"`
 	}
-	if jsonParseErr := json.Unmarshal([]byte(errStr), &jsonErr); jsonParseErr == nil && jsonErr.Error != nil && jsonErr.Error.Code == -32601 {
-		displayMethod := method
-		if displayMethod == "" {
-			displayMethod = "method"
-		}
+	if json.Unmarshal([]byte(errStr), &jsonErr) == nil && jsonErr.Error != nil {
+		code = jsonErr.Error.Code
+	}
+
+	hasCode := func(c int, s string) bool {
+		return code == c || strings.Contains(errStr, s)
+	}
+
+	displayMethod := method
+	if displayMethod == "" {
+		displayMethod = "method"
+	}
+
+	switch {
+	case strings.Contains(errStr, "MethodNotFoundError") || hasCode(-32601, "-32601"):
 		return fmt.Errorf("❌ Method '%s' not implemented by the agent", displayMethod)
+	case hasCode(-32004, "-32004"):
+		return fmt.Errorf("❌ Agent does not support the authenticated extended card")
+	case hasCode(-32007, "-32007"):
+		return fmt.Errorf("❌ Extended agent card not configured on the server")
+	case strings.Contains(errStr, "status code: 401"):
+		return fmt.Errorf("❌ Authentication rejected: %s (check the token and --auth-header)", errStr)
 	}
 
 	return err
@@ -340,6 +355,63 @@ var connectCmd = &cobra.Command{
 		}
 
 		return printFormatted(output)
+	},
+}
+
+var authCmd = &cobra.Command{
+	Use:   "auth [token]",
+	Short: "Verify a credential against the A2A server",
+	Long: `Verifies a credential by fetching the authenticated extended agent card.
+
+The token is obtained out of band (for example from your identity provider) and is
+sent in the header named by --auth-header (default Authorization, where the value is
+prefixed with "Bearer ").`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+
+		viper.Set("token", args[0])
+		ensureA2AClient()
+
+		agentCard, err := a2aClient.GetAgentCard(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to connect to A2A server: %w", err)
+		}
+
+		header, _ := authHeader()
+
+		if agentCard.SupportsExtendedAgentCard == nil || !*agentCard.SupportsExtendedAgentCard {
+			if err := printFormatted(map[string]any{
+				"authenticated":    false,
+				"reason":           "the agent card does not advertise supportsExtendedAgentCard, so the credential cannot be verified",
+				"security_schemes": agentCard.SecuritySchemes,
+			}); err != nil {
+				return err
+			}
+			return fmt.Errorf("❌ Agent does not support the authenticated extended card")
+		}
+
+		resp, err := a2aClient.GetAuthenticatedExtendedCard(ctx, adk.GetAuthenticatedExtendedCardParams{})
+		if err != nil {
+			return handleA2AError(err, "agent/getAuthenticatedExtendedCard")
+		}
+
+		resultBytes, err := json.Marshal(resp.Result)
+		if err != nil {
+			return fmt.Errorf("failed to marshal response: %w", err)
+		}
+
+		var extendedCard adk.AgentCard
+		if err := json.Unmarshal(resultBytes, &extendedCard); err != nil {
+			return fmt.Errorf("failed to unmarshal extended agent card: %w", err)
+		}
+
+		return printFormatted(map[string]any{
+			"authenticated":    true,
+			"header":           header,
+			"security_schemes": agentCard.SecuritySchemes,
+			"extended_card":    extendedCard,
+		})
 	},
 }
 
