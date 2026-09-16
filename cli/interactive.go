@@ -10,12 +10,12 @@ import (
 	spinner "github.com/charmbracelet/bubbles/spinner"
 	textinput "github.com/charmbracelet/bubbles/textinput"
 	viewport "github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
+	bubbletea "github.com/charmbracelet/bubbletea"
 	lipgloss "github.com/charmbracelet/lipgloss"
 	uuid "github.com/google/uuid"
 	viper "github.com/spf13/viper"
 
-	adk "github.com/inference-gateway/adk/types"
+	types "github.com/inference-gateway/adk/types"
 )
 
 // backgroundPollInterval is how often a background task is polled for completion.
@@ -54,7 +54,7 @@ type chatLine struct {
 type sessionState struct {
 	contextID  string
 	lastTaskID string
-	lastState  adk.TaskState
+	lastState  types.TaskState
 	lines      []chatLine
 	agentBuf   string
 	replyIdx   int
@@ -64,14 +64,14 @@ type sessionState struct {
 
 // streamStartedMsg carries the channel returned by SendTaskStreaming.
 type streamStartedMsg struct {
-	ch <-chan adk.JSONRPCSuccessResponse
+	ch <-chan types.JSONRPCSuccessResponse
 }
 
 // streamEventMsg carries a single event read from the streaming channel.
 type streamEventMsg struct {
-	resp adk.JSONRPCSuccessResponse
+	resp types.JSONRPCSuccessResponse
 	ok   bool
-	ch   <-chan adk.JSONRPCSuccessResponse
+	ch   <-chan types.JSONRPCSuccessResponse
 }
 
 // taskSubmittedMsg is emitted in background mode once a task is accepted.
@@ -82,7 +82,7 @@ type taskSubmittedMsg struct {
 
 // taskPolledMsg carries the latest task snapshot while polling in background mode.
 type taskPolledMsg struct {
-	task adk.Task
+	task types.Task
 	done bool
 }
 
@@ -93,7 +93,7 @@ type agentErrorMsg struct {
 
 // tasksListedMsg carries the result of an in-chat /tasks command.
 type tasksListedMsg struct {
-	tasks []adk.Task
+	tasks []types.Task
 	all   bool
 	err   error
 }
@@ -124,7 +124,7 @@ type interactiveModel struct {
 
 	contextID  string
 	lastTaskID string
-	lastState  adk.TaskState
+	lastState  types.TaskState
 
 	sessions      map[string]*sessionState
 	activeSession string
@@ -174,13 +174,13 @@ func newInteractiveModel(mode chatMode, serverURL, agentName, contextID string) 
 	return m
 }
 
-func (m interactiveModel) Init() tea.Cmd {
+func (m interactiveModel) Init() bubbletea.Cmd {
 	return textinput.Blink
 }
 
-func (m interactiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m interactiveModel) Update(msg bubbletea.Msg) (bubbletea.Model, bubbletea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
+	case bubbletea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		m.layout()
@@ -188,11 +188,11 @@ func (m interactiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshViewport()
 		return m, nil
 
-	case tea.KeyMsg:
+	case bubbletea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
-			return m, tea.Quit
-		case tea.KeyEnter:
+		case bubbletea.KeyCtrlC, bubbletea.KeyEsc:
+			return m, bubbletea.Quit
+		case bubbletea.KeyEnter:
 			if m.waiting {
 				return m, nil
 			}
@@ -201,13 +201,13 @@ func (m interactiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			return m.submit(text)
-		case tea.KeyCtrlT:
+		case bubbletea.KeyCtrlT:
 			if !m.waiting {
 				m.toggleMode()
 				m.refreshViewport()
 			}
 			return m, nil
-		case tea.KeyCtrlL:
+		case bubbletea.KeyCtrlL:
 			if !m.waiting {
 				m.clearTranscript()
 				m.refreshViewport()
@@ -270,21 +270,21 @@ func (m interactiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.waiting {
 			return m, nil
 		}
-		var cmd tea.Cmd
+		var cmd bubbletea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
 
-	var cmds []tea.Cmd
-	var cmd tea.Cmd
+	var cmds []bubbletea.Cmd
+	var cmd bubbletea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	cmds = append(cmds, cmd)
 	m.viewport, cmd = m.viewport.Update(msg)
 	cmds = append(cmds, cmd)
-	return m, tea.Batch(cmds...)
+	return m, bubbletea.Batch(cmds...)
 }
 
-func (m interactiveModel) submit(text string) (tea.Model, tea.Cmd) {
+func (m interactiveModel) submit(text string) (bubbletea.Model, bubbletea.Cmd) {
 	if strings.HasPrefix(text, "/") {
 		return m.handleSlashCommand(text)
 	}
@@ -297,15 +297,15 @@ func (m interactiveModel) submit(text string) (tea.Model, tea.Cmd) {
 	params := m.buildParams(text)
 
 	if m.mode == modeBackground {
-		return m, tea.Batch(m.spinner.Tick, submitBackgroundCmd(params))
+		return m, bubbletea.Batch(m.spinner.Tick, submitBackgroundCmd(params))
 	}
 
 	m.agentBuf = ""
 	m.replyIdx = -1
-	return m, tea.Batch(m.spinner.Tick, startStreamCmd(params))
+	return m, bubbletea.Batch(m.spinner.Tick, startStreamCmd(params))
 }
 
-func (m interactiveModel) handleSlashCommand(text string) (tea.Model, tea.Cmd) {
+func (m interactiveModel) handleSlashCommand(text string) (bubbletea.Model, bubbletea.Cmd) {
 	m.input.Reset()
 	fields := strings.Fields(text)
 	cmd := strings.ToLower(fields[0])
@@ -321,7 +321,7 @@ func (m interactiveModel) handleSlashCommand(text string) (tea.Model, tea.Cmd) {
 		}
 		m.waiting = true
 		m.refreshViewport()
-		return m, tea.Batch(m.spinner.Tick, listTasksForChatCmd(m.contextID, all, 20))
+		return m, bubbletea.Batch(m.spinner.Tick, listTasksForChatCmd(m.contextID, all, 20))
 	case "/sessions":
 		var b strings.Builder
 		fmt.Fprintf(&b, "sessions (%d):", len(m.sessions))
@@ -383,18 +383,18 @@ func (m interactiveModel) handleSlashCommand(text string) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m interactiveModel) buildParams(text string) adk.MessageSendParams {
+func (m interactiveModel) buildParams(text string) types.MessageSendParams {
 	contextID := m.contextID
-	params := adk.MessageSendParams{
-		Message: adk.Message{
+	params := types.MessageSendParams{
+		Message: types.Message{
 			MessageID: uuid.NewString(),
-			Role:      adk.RoleUser,
+			Role:      types.RoleUser,
 			ContextID: &contextID,
-			Parts:     []adk.Part{{Text: &text}},
+			Parts:     []types.Part{{Text: &text}},
 		},
 	}
 	// Continue an in-progress task when the agent previously asked for more input.
-	if m.lastTaskID != "" && m.lastState == adk.TaskStateInputRequired {
+	if m.lastTaskID != "" && m.lastState == types.TaskStateInputRequired {
 		taskID := m.lastTaskID
 		params.Message.TaskID = &taskID
 	}
@@ -428,7 +428,7 @@ func (m *interactiveModel) loadSession(id string) {
 	m.replyIdx = s.replyIdx
 }
 
-func (m *interactiveModel) applyStreamEvent(resp adk.JSONRPCSuccessResponse) {
+func (m *interactiveModel) applyStreamEvent(resp types.JSONRPCSuccessResponse) {
 	eventJSON, err := json.Marshal(resp.Result)
 	if err != nil {
 		return
@@ -445,7 +445,7 @@ func (m *interactiveModel) applyStreamEvent(resp adk.JSONRPCSuccessResponse) {
 
 	switch {
 	case hasArtifact:
-		var ev adk.TaskArtifactUpdateEvent
+		var ev types.TaskArtifactUpdateEvent
 		if err := json.Unmarshal(eventJSON, &ev); err != nil {
 			return
 		}
@@ -456,7 +456,7 @@ func (m *interactiveModel) applyStreamEvent(resp adk.JSONRPCSuccessResponse) {
 			m.appendAgentText(text)
 		}
 	case hasFinal:
-		var ev adk.TaskStatusUpdateEvent
+		var ev types.TaskStatusUpdateEvent
 		if err := json.Unmarshal(eventJSON, &ev); err != nil {
 			return
 		}
@@ -470,7 +470,7 @@ func (m *interactiveModel) applyStreamEvent(resp adk.JSONRPCSuccessResponse) {
 			}
 		}
 	case hasID:
-		var task adk.Task
+		var task types.Task
 		if err := json.Unmarshal(eventJSON, &task); err != nil {
 			return
 		}
@@ -500,7 +500,7 @@ func (m *interactiveModel) finishAgentReply() {
 	if m.replyIdx == -1 {
 		m.addLine(senderSystem, "(no response received)")
 	}
-	if m.lastState == adk.TaskStateInputRequired {
+	if m.lastState == types.TaskStateInputRequired {
 		m.addLine(senderSystem, "agent needs more input — type your reply")
 	}
 	m.waiting = false
@@ -508,7 +508,7 @@ func (m *interactiveModel) finishAgentReply() {
 	m.agentBuf = ""
 }
 
-func (m *interactiveModel) applyFinalTask(task adk.Task) {
+func (m *interactiveModel) applyFinalTask(task types.Task) {
 	if task.ID != "" {
 		m.lastTaskID = task.ID
 	}
@@ -525,18 +525,18 @@ func (m *interactiveModel) applyFinalTask(task adk.Task) {
 	switch {
 	case text != "":
 		m.addLine(senderAgent, text)
-	case task.Status.State == adk.TaskStateCompleted:
+	case task.Status.State == types.TaskStateCompleted:
 		m.addLine(senderSystem, "task completed with no message")
 	default:
 		m.addLine(senderSystem, "task ended: "+humanState(task.Status.State))
 	}
 
-	if task.Status.State == adk.TaskStateInputRequired {
+	if task.Status.State == types.TaskStateInputRequired {
 		m.addLine(senderSystem, "agent needs more input — type your reply")
 	}
 }
 
-func (m *interactiveModel) renderTaskList(tasks []adk.Task, all bool) {
+func (m *interactiveModel) renderTaskList(tasks []types.Task, all bool) {
 	var header string
 	if all {
 		header = fmt.Sprintf("📋 Tasks (all contexts, %d):", len(tasks))
@@ -665,8 +665,8 @@ func (m interactiveModel) View() string {
 
 // --- commands ---
 
-func startStreamCmd(params adk.MessageSendParams) tea.Cmd {
-	return func() tea.Msg {
+func startStreamCmd(params types.MessageSendParams) bubbletea.Cmd {
+	return func() bubbletea.Msg {
 		ch, err := a2aClient.SendTaskStreaming(context.Background(), params)
 		if err != nil {
 			return agentErrorMsg{err: handleA2AError(err, "message/stream")}
@@ -675,15 +675,15 @@ func startStreamCmd(params adk.MessageSendParams) tea.Cmd {
 	}
 }
 
-func readStreamCmd(ch <-chan adk.JSONRPCSuccessResponse) tea.Cmd {
-	return func() tea.Msg {
+func readStreamCmd(ch <-chan types.JSONRPCSuccessResponse) bubbletea.Cmd {
+	return func() bubbletea.Msg {
 		resp, ok := <-ch
 		return streamEventMsg{resp: resp, ok: ok, ch: ch}
 	}
 }
 
-func submitBackgroundCmd(params adk.MessageSendParams) tea.Cmd {
-	return func() tea.Msg {
+func submitBackgroundCmd(params types.MessageSendParams) bubbletea.Cmd {
+	return func() bubbletea.Msg {
 		resp, err := a2aClient.SendTask(context.Background(), params)
 		if err != nil {
 			return agentErrorMsg{err: handleA2AError(err, "message/send")}
@@ -696,9 +696,9 @@ func submitBackgroundCmd(params adk.MessageSendParams) tea.Cmd {
 	}
 }
 
-func listTasksForChatCmd(contextID string, all bool, limit int) tea.Cmd {
-	return func() tea.Msg {
-		params := adk.TaskListParams{Limit: limit}
+func listTasksForChatCmd(contextID string, all bool, limit int) bubbletea.Cmd {
+	return func() bubbletea.Msg {
+		params := types.TaskListParams{Limit: limit}
 		if !all {
 			params.ContextID = &contextID
 		}
@@ -710,7 +710,7 @@ func listTasksForChatCmd(contextID string, all bool, limit int) tea.Cmd {
 		if err != nil {
 			return tasksListedMsg{err: fmt.Errorf("failed to marshal task list: %w", err), all: all}
 		}
-		var list adk.TaskList
+		var list types.TaskList
 		if err := json.Unmarshal(b, &list); err != nil {
 			return tasksListedMsg{err: fmt.Errorf("failed to unmarshal task list: %w", err), all: all}
 		}
@@ -718,9 +718,9 @@ func listTasksForChatCmd(contextID string, all bool, limit int) tea.Cmd {
 	}
 }
 
-func pollTaskCmd(taskID string) tea.Cmd {
-	return tea.Tick(backgroundPollInterval, func(time.Time) tea.Msg {
-		resp, err := a2aClient.GetTask(context.Background(), adk.TaskQueryParams{ID: taskID})
+func pollTaskCmd(taskID string) bubbletea.Cmd {
+	return bubbletea.Tick(backgroundPollInterval, func(time.Time) bubbletea.Msg {
+		resp, err := a2aClient.GetTask(context.Background(), types.TaskQueryParams{ID: taskID})
 		if err != nil {
 			return agentErrorMsg{err: handleA2AError(err, "tasks/get")}
 		}
@@ -734,8 +734,8 @@ func pollTaskCmd(taskID string) tea.Cmd {
 
 // --- helpers ---
 
-func taskFromResult(result any) (adk.Task, error) {
-	var task adk.Task
+func taskFromResult(result any) (types.Task, error) {
+	var task types.Task
 	b, err := json.Marshal(result)
 	if err != nil {
 		return task, fmt.Errorf("failed to marshal task result: %w", err)
@@ -746,20 +746,20 @@ func taskFromResult(result any) (adk.Task, error) {
 	return task, nil
 }
 
-func isTerminalState(state adk.TaskState) bool {
+func isTerminalState(state types.TaskState) bool {
 	switch state {
-	case adk.TaskStateCompleted,
-		adk.TaskStateFailed,
-		adk.TaskStateCancelled,
-		adk.TaskStateRejected,
-		adk.TaskStateInputRequired:
+	case types.TaskStateCompleted,
+		types.TaskStateFailed,
+		types.TaskStateCancelled,
+		types.TaskStateRejected,
+		types.TaskStateInputRequired:
 		return true
 	default:
 		return false
 	}
 }
 
-func partsToText(parts []adk.Part) string {
+func partsToText(parts []types.Part) string {
 	var b strings.Builder
 	for _, p := range parts {
 		if p.Text != nil {
@@ -769,9 +769,9 @@ func partsToText(parts []adk.Part) string {
 	return b.String()
 }
 
-func latestAgentText(history []adk.Message) string {
+func latestAgentText(history []types.Message) string {
 	for i := len(history) - 1; i >= 0; i-- {
-		if history[i].Role == adk.RoleAgent {
+		if history[i].Role == types.RoleAgent {
 			if text := partsToText(history[i].Parts); text != "" {
 				return text
 			}
@@ -780,7 +780,7 @@ func latestAgentText(history []adk.Message) string {
 	return ""
 }
 
-func humanState(s adk.TaskState) string {
+func humanState(s types.TaskState) string {
 	return strings.ToLower(strings.TrimPrefix(string(s), "TASK_STATE_"))
 }
 
@@ -819,7 +819,7 @@ func runInteractiveChat(mode chatMode, contextID string) error {
 	}
 	model.addLine(senderSystem, "type a message and press Enter to begin")
 
-	program := tea.NewProgram(model, tea.WithAltScreen())
+	program := bubbletea.NewProgram(model, bubbletea.WithAltScreen())
 	_, err := program.Run()
 	return err
 }

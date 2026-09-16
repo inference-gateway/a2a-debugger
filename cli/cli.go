@@ -15,7 +15,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 
 	client "github.com/inference-gateway/adk/client"
-	adk "github.com/inference-gateway/adk/types"
+	types "github.com/inference-gateway/adk/types"
 )
 
 var (
@@ -195,7 +195,7 @@ func handleA2AError(err error, method string) error {
 	}
 
 	var jsonErr struct {
-		Error *adk.JSONRPCError `json:"error,omitempty"`
+		Error *types.JSONRPCError `json:"error,omitempty"`
 	}
 	if jsonParseErr := json.Unmarshal([]byte(errStr), &jsonErr); jsonParseErr == nil && jsonErr.Error != nil && jsonErr.Error.Code == -32601 {
 		displayMethod := method
@@ -358,13 +358,13 @@ var listTasksCmd = &cobra.Command{
 		includeHistory, _ := cmd.Flags().GetBool("include-history")
 		includeArtifacts, _ := cmd.Flags().GetBool("include-artifacts")
 
-		params := adk.TaskListParams{
+		params := types.TaskListParams{
 			Limit:  limit,
 			Offset: offset,
 		}
 
 		if state != "" {
-			taskState := adk.TaskState(state)
+			taskState := types.TaskState(state)
 			params.State = &taskState
 		}
 
@@ -384,16 +384,16 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal response: %w", err)
 		}
 
-		var taskList adk.TaskList
+		var taskList types.TaskList
 		if err := json.Unmarshal(resultBytes, &taskList); err != nil {
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
 
 		tasks := taskList.Tasks
 		if !includeHistory || !includeArtifacts {
-			var filteredTasks []adk.Task
+			var filteredTasks []types.Task
 			for _, task := range tasks {
-				filteredTask := adk.Task{
+				filteredTask := types.Task{
 					ID:        task.ID,
 					ContextID: task.ContextID,
 					Status:    task.Status,
@@ -433,7 +433,7 @@ var getTaskCmd = &cobra.Command{
 
 		historyLength, _ := cmd.Flags().GetInt("history-length")
 
-		params := adk.TaskQueryParams{
+		params := types.TaskQueryParams{
 			ID: taskID,
 		}
 
@@ -453,7 +453,7 @@ var getTaskCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal response: %w", err)
 		}
 
-		var task adk.Task
+		var task types.Task
 		if err := json.Unmarshal(resultBytes, &task); err != nil {
 			return fmt.Errorf("failed to unmarshal task: %w", err)
 		}
@@ -472,7 +472,7 @@ var historyCmd = &cobra.Command{
 		ensureA2AClient()
 
 		ctx := context.Background()
-		params := adk.TaskListParams{
+		params := types.TaskListParams{
 			ContextID: &contextID,
 			Limit:     100,
 		}
@@ -489,7 +489,7 @@ var historyCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal response: %w", err)
 		}
 
-		var taskList adk.TaskList
+		var taskList types.TaskList
 		if err := json.Unmarshal(resultBytes, &taskList); err != nil {
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
@@ -574,11 +574,11 @@ var submitTaskCmd = &cobra.Command{
 
 		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
 
-		params := adk.MessageSendParams{
-			Message: adk.Message{
+		params := types.MessageSendParams{
+			Message: types.Message{
 				MessageID: messageID,
-				Role:      adk.RoleUser,
-				Parts: []adk.Part{
+				Role:      types.RoleUser,
+				Parts: []types.Part{
 					{Text: &message},
 				},
 			},
@@ -604,7 +604,7 @@ var submitTaskCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal response: %w", err)
 		}
 
-		var task adk.Task
+		var task types.Task
 		if err := json.Unmarshal(resultBytes, &task); err != nil {
 			return fmt.Errorf("failed to unmarshal task: %w", err)
 		}
@@ -636,11 +636,11 @@ var submitStreamingTaskCmd = &cobra.Command{
 		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
 		startTime := time.Now()
 
-		params := adk.MessageSendParams{
-			Message: adk.Message{
+		params := types.MessageSendParams{
+			Message: types.Message{
 				MessageID: messageID,
-				Role:      adk.RoleUser,
-				Parts: []adk.Part{
+				Role:      types.RoleUser,
+				Parts: []types.Part{
 					{Text: &message},
 				},
 			},
@@ -675,7 +675,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 			StatusUpdates   int
 			ArtifactUpdates int
 			TotalEvents     int
-			FinalMessage    *adk.Message
+			FinalMessage    *types.Message
 		}
 
 		for resp := range respChan {
@@ -710,7 +710,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 			switch eventKind {
 			case "status-update":
 				streamingSummary.StatusUpdates++
-				var statusEvent adk.TaskStatusUpdateEvent
+				var statusEvent types.TaskStatusUpdateEvent
 				if err := json.Unmarshal(eventJSON, &statusEvent); err == nil {
 					if streamingSummary.TaskID == "" {
 						streamingSummary.TaskID = statusEvent.TaskID
@@ -725,7 +725,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				}
 			case "artifact-update":
 				streamingSummary.ArtifactUpdates++
-				var artifactEvent adk.TaskArtifactUpdateEvent
+				var artifactEvent types.TaskArtifactUpdateEvent
 				if err := json.Unmarshal(eventJSON, &artifactEvent); err == nil {
 					if streamingSummary.TaskID == "" {
 						streamingSummary.TaskID = artifactEvent.TaskID
@@ -735,7 +735,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 					}
 				}
 			case "task":
-				var task adk.Task
+				var task types.Task
 				if err := json.Unmarshal(eventJSON, &task); err == nil {
 					if streamingSummary.TaskID == "" {
 						streamingSummary.TaskID = task.ID
@@ -760,7 +760,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 			} else {
 				switch eventKind {
 				case "status-update":
-					var statusEvent adk.TaskStatusUpdateEvent
+					var statusEvent types.TaskStatusUpdateEvent
 					if err := json.Unmarshal(eventJSON, &statusEvent); err != nil {
 						logger.Error("Failed to unmarshal status event", zap.Error(err))
 						continue
@@ -786,7 +786,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 					}
 
 				case "artifact-update":
-					var artifactEvent adk.TaskArtifactUpdateEvent
+					var artifactEvent types.TaskArtifactUpdateEvent
 					if err := json.Unmarshal(eventJSON, &artifactEvent); err != nil {
 						logger.Error("Failed to unmarshal artifact event", zap.Error(err))
 						continue
@@ -818,7 +818,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 					}
 
 				case "task":
-					var task adk.Task
+					var task types.Task
 					if err := json.Unmarshal(eventJSON, &task); err != nil {
 						logger.Error("Failed to unmarshal task snapshot", zap.Error(err))
 						continue
