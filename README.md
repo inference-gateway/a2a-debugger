@@ -139,6 +139,7 @@ a2a tasks submit-streaming <msg>   # Submit streaming task with real-time respon
 ```bash
 a2a connect                     # Test connection to A2A server
 a2a agent-card                  # Get agent card information
+a2a auth <token>                # Verify a credential and fetch the authenticated extended card
 ```
 
 #### Interactive Mode
@@ -159,6 +160,8 @@ timeout: 30s
 debug: false
 insecure: false
 output: yaml  # or json
+token: ""             # bearer token, stored in plaintext - prefer --token or the TOKEN env var
+auth-header: Authorization
 ```
 
 ### Command Options
@@ -171,6 +174,8 @@ output: yaml  # or json
 - `--insecure`: Skip TLS verification
 - `--config`: Config file path
 - `--output, -o`: Output format (yaml|json) (default: yaml)
+- `--token`: Bearer token (or credential value) sent to the A2A server
+- `--auth-header`: Header carrying the credential (default: Authorization)
 
 #### Task List Options
 
@@ -188,6 +193,37 @@ output: yaml  # or json
 
 - `--background, -b`: Use background (long-running task) mode instead of streaming (default: false)
 - `--context-id`: Resume an existing context ID (optional; a new one is generated otherwise)
+
+### Authentication
+
+Per the A2A spec the credential is obtained out of band; the debugger only transmits it.
+The public agent card is always unauthenticated, every other request carries the token in
+the header named by `--auth-header` (for `Authorization` the value is prefixed with `Bearer `).
+
+`a2a auth <token>` verifies a credential by sending one authenticated request (`tasks/list`):
+a `401` means the server rejected it, anything else means it was accepted. When the public card
+advertises `supportsExtendedAgentCard`, the authenticated extended card is fetched and printed too.
+
+```bash
+# Get a token from your identity provider (Keycloak, client credentials grant)
+$ TOKEN=$(curl -s http://localhost:8081/realms/inference-gateway-realm/protocol/openid-connect/token \
+    -d grant_type=client_credentials -d client_id=inference-gateway-client -d client_secret=very-secret \
+    | jq -r .access_token)
+
+# Verify it
+$ a2a auth "$TOKEN" --server-url http://localhost:8080
+
+# Use it with any other command
+$ a2a tasks list --token "$TOKEN"
+$ TOKEN="$TOKEN" a2a interactive
+
+# API-key style servers
+$ a2a agent-card --token "$KEY" --auth-header X-Api-Key
+```
+
+`a2a config set token <jwt>` persists the token, but it is written in plaintext to
+`~/.a2a.yaml` - prefer the `--token` flag or the `TOKEN` environment variable.
+A runnable Keycloak setup lives in [`example/`](example/README.md#authentication).
 
 ### Examples
 

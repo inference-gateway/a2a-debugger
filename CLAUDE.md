@@ -29,7 +29,7 @@ Try the binary against a real server end-to-end via `example/docker-compose.yml`
 
 **Single-package CLI.** All commands, flag wiring, viper bindings, output helpers, and the JSON-RPC error normalizer live in `cli/cli.go`. `main.go` is just `cli.Execute(version, commit, date)`. Adding a command means: declare a `var fooCmd = &cobra.Command{...}` in `cli.go`, register it in `init()` under the right namespace (`tasksCmd.AddCommand(...)` or `rootCmd.AddCommand(...)`), and wire its flags there too.
 
-**Two namespaces under root**: `config` (set/get/list backed by viper) and `tasks` (list/get/history/submit/submit-streaming). `connect`, `agent-card`, and `version` sit directly on root.
+**Two namespaces under root**: `config` (set/get/list backed by viper) and `tasks` (list/get/history/submit/submit-streaming). `connect`, `auth`, `agent-card`, `interactive`, and `version` sit directly on root.
 
 **Lazy A2A client.** The `a2aClient` package-global is `nil` until `ensureA2AClient()` is called inside a command's `RunE`. Do not call `initA2AClient()` at package init — it depends on viper having loaded config and on the logger existing.
 
