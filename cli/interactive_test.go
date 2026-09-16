@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	adk "github.com/inference-gateway/adk/types"
+	bubbletea "github.com/charmbracelet/bubbletea"
+
+	types "github.com/inference-gateway/adk/types"
 )
 
 func lastAgentLine(m interactiveModel) (string, bool) {
@@ -27,16 +28,16 @@ func hasSystemLine(m interactiveModel, substr string) bool {
 	return false
 }
 
-func statusEventResp(text string, state adk.TaskState, final bool) adk.JSONRPCSuccessResponse {
+func statusEventResp(text string, state types.TaskState, final bool) types.JSONRPCSuccessResponse {
 	status := map[string]any{"state": string(state)}
 	if text != "" {
 		status["message"] = map[string]any{
 			"messageId": "m-agent",
-			"role":      string(adk.RoleAgent),
+			"role":      string(types.RoleAgent),
 			"parts":     []map[string]any{{"text": text}},
 		}
 	}
-	return adk.JSONRPCSuccessResponse{
+	return types.JSONRPCSuccessResponse{
 		Result: map[string]any{
 			"taskId":    "task-1",
 			"contextId": "ctx-1",
@@ -74,9 +75,9 @@ func TestInteractiveStreamingAccumulatesText(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "url", "Agent", "ctx-1")
 	m.waiting = true
 
-	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("Hello ", adk.TaskStateWorking, false)})
+	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("Hello ", types.TaskStateWorking, false)})
 	m = updated.(interactiveModel)
-	updated, _ = m.Update(streamEventMsg{ok: true, resp: statusEventResp("world", adk.TaskStateCompleted, true)})
+	updated, _ = m.Update(streamEventMsg{ok: true, resp: statusEventResp("world", types.TaskStateCompleted, true)})
 	m = updated.(interactiveModel)
 	updated, _ = m.Update(streamEventMsg{ok: false})
 	m = updated.(interactiveModel)
@@ -109,12 +110,12 @@ func TestInteractiveStreamingInputRequiredPrompt(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "url", "Agent", "ctx-1")
 	m.waiting = true
 
-	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("need more info", adk.TaskStateInputRequired, true)})
+	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("need more info", types.TaskStateInputRequired, true)})
 	m = updated.(interactiveModel)
 	updated, _ = m.Update(streamEventMsg{ok: false})
 	m = updated.(interactiveModel)
 
-	if m.lastState != adk.TaskStateInputRequired {
+	if m.lastState != types.TaskStateInputRequired {
 		t.Errorf("expected lastState input-required, got %v", m.lastState)
 	}
 	if !hasSystemLine(m, "needs more input") {
@@ -138,7 +139,7 @@ func TestInteractiveBackgroundFlow(t *testing.T) {
 		t.Errorf("expected lastTaskID task-9, got %q", m.lastTaskID)
 	}
 
-	workingTask := adk.Task{ID: "task-9", Status: adk.TaskStatus{State: adk.TaskStateWorking}}
+	workingTask := types.Task{ID: "task-9", Status: types.TaskStatus{State: types.TaskStateWorking}}
 	updated, cmd = m.Update(taskPolledMsg{task: workingTask, done: false})
 	m = updated.(interactiveModel)
 	if cmd == nil {
@@ -149,13 +150,13 @@ func TestInteractiveBackgroundFlow(t *testing.T) {
 	}
 
 	finalText := "final answer"
-	doneTask := adk.Task{
+	doneTask := types.Task{
 		ID: "task-9",
-		Status: adk.TaskStatus{
-			State: adk.TaskStateCompleted,
-			Message: &adk.Message{
-				Role:  adk.RoleAgent,
-				Parts: []adk.Part{{Text: &finalText}},
+		Status: types.TaskStatus{
+			State: types.TaskStateCompleted,
+			Message: &types.Message{
+				Role:  types.RoleAgent,
+				Parts: []types.Part{{Text: &finalText}},
 			},
 		},
 	}
@@ -179,12 +180,12 @@ func TestInteractiveBackgroundUsesHistoryFallback(t *testing.T) {
 	m.waiting = true
 
 	historyText := "answer from history"
-	doneTask := adk.Task{
+	doneTask := types.Task{
 		ID:     "task-h",
-		Status: adk.TaskStatus{State: adk.TaskStateCompleted},
-		History: []adk.Message{
-			{Role: adk.RoleUser, Parts: []adk.Part{}},
-			{Role: adk.RoleAgent, Parts: []adk.Part{{Text: &historyText}}},
+		Status: types.TaskStatus{State: types.TaskStateCompleted},
+		History: []types.Message{
+			{Role: types.RoleUser, Parts: []types.Part{}},
+			{Role: types.RoleAgent, Parts: []types.Part{{Text: &historyText}}},
 		},
 	}
 	updated, _ := m.Update(taskPolledMsg{task: doneTask, done: true})
@@ -198,7 +199,7 @@ func TestInteractiveBackgroundUsesHistoryFallback(t *testing.T) {
 
 func TestInteractiveToggleMode(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "url", "Agent", "ctx-1")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlT})
+	updated, _ := m.Update(bubbletea.KeyMsg{Type: bubbletea.KeyCtrlT})
 	m = updated.(interactiveModel)
 	if m.mode != modeBackground {
 		t.Errorf("expected background mode after toggle, got %v", m.mode)
@@ -212,7 +213,7 @@ func TestInteractiveEnterSubmitsMessage(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "url", "Agent", "ctx-1")
 	m.input.SetValue("hi there")
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(bubbletea.KeyMsg{Type: bubbletea.KeyEnter})
 	m = updated.(interactiveModel)
 
 	if !m.waiting {
@@ -241,7 +242,7 @@ func TestInteractiveEnterIgnoredWhileWaiting(t *testing.T) {
 	m.waiting = true
 	m.input.SetValue("should be ignored")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(bubbletea.KeyMsg{Type: bubbletea.KeyEnter})
 	m = updated.(interactiveModel)
 
 	for _, l := range m.lines {
@@ -254,7 +255,7 @@ func TestInteractiveEnterIgnoredWhileWaiting(t *testing.T) {
 func TestBuildParamsContinuesInputRequiredTask(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "url", "Agent", "ctx-1")
 	m.lastTaskID = "task-7"
-	m.lastState = adk.TaskStateInputRequired
+	m.lastState = types.TaskStateInputRequired
 
 	params := m.buildParams("continue please")
 	if params.Message.TaskID == nil || *params.Message.TaskID != "task-7" {
@@ -264,7 +265,7 @@ func TestBuildParamsContinuesInputRequiredTask(t *testing.T) {
 		t.Error("expected context ID to always be set")
 	}
 
-	m.lastState = adk.TaskStateCompleted
+	m.lastState = types.TaskStateCompleted
 	params = m.buildParams("new message")
 	if params.Message.TaskID != nil {
 		t.Error("expected task ID to be unset for a completed prior task")
@@ -275,15 +276,15 @@ func TestStartStreamCmd(t *testing.T) {
 	originalClient := a2aClient
 	defer func() { a2aClient = originalClient }()
 
-	ch := make(chan adk.JSONRPCSuccessResponse)
+	ch := make(chan types.JSONRPCSuccessResponse)
 	close(ch)
 	a2aClient = &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error) {
+		sendTaskStreamingFunc: func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
 			return ch, nil
 		},
 	}
 
-	msg := startStreamCmd(adk.MessageSendParams{})()
+	msg := startStreamCmd(types.MessageSendParams{})()
 	if _, ok := msg.(streamStartedMsg); !ok {
 		t.Fatalf("expected streamStartedMsg, got %T", msg)
 	}
@@ -294,12 +295,12 @@ func TestStartStreamCmdMethodNotFound(t *testing.T) {
 	defer func() { a2aClient = originalClient }()
 
 	a2aClient = &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error) {
+		sendTaskStreamingFunc: func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
 			return nil, &mockError{msg: "MethodNotFoundError: -32601"}
 		},
 	}
 
-	msg := startStreamCmd(adk.MessageSendParams{})()
+	msg := startStreamCmd(types.MessageSendParams{})()
 	errMsg, ok := msg.(agentErrorMsg)
 	if !ok {
 		t.Fatalf("expected agentErrorMsg, got %T", msg)
@@ -314,18 +315,18 @@ func TestSubmitBackgroundCmd(t *testing.T) {
 	defer func() { a2aClient = originalClient }()
 
 	a2aClient = &mockA2AClient{
-		sendTaskFunc: func(ctx context.Context, params adk.MessageSendParams) (*adk.JSONRPCSuccessResponse, error) {
-			return &adk.JSONRPCSuccessResponse{
+		sendTaskFunc: func(ctx context.Context, params types.MessageSendParams) (*types.JSONRPCSuccessResponse, error) {
+			return &types.JSONRPCSuccessResponse{
 				Result: map[string]any{
 					"id":        "task-bg",
 					"contextId": "ctx-bg",
-					"status":    map[string]any{"state": string(adk.TaskStateSubmitted)},
+					"status":    map[string]any{"state": string(types.TaskStateSubmitted)},
 				},
 			}, nil
 		},
 	}
 
-	msg := submitBackgroundCmd(adk.MessageSendParams{})()
+	msg := submitBackgroundCmd(types.MessageSendParams{})()
 	sub, ok := msg.(taskSubmittedMsg)
 	if !ok {
 		t.Fatalf("expected taskSubmittedMsg, got %T", msg)
@@ -339,12 +340,12 @@ func TestSubmitBackgroundCmd(t *testing.T) {
 }
 
 func TestIsTerminalState(t *testing.T) {
-	terminal := []adk.TaskState{
-		adk.TaskStateCompleted,
-		adk.TaskStateFailed,
-		adk.TaskStateCancelled,
-		adk.TaskStateRejected,
-		adk.TaskStateInputRequired,
+	terminal := []types.TaskState{
+		types.TaskStateCompleted,
+		types.TaskStateFailed,
+		types.TaskStateCancelled,
+		types.TaskStateRejected,
+		types.TaskStateInputRequired,
 	}
 	for _, s := range terminal {
 		if !isTerminalState(s) {
@@ -352,10 +353,10 @@ func TestIsTerminalState(t *testing.T) {
 		}
 	}
 
-	nonTerminal := []adk.TaskState{
-		adk.TaskStateWorking,
-		adk.TaskStateSubmitted,
-		adk.TaskStateUnspecified,
+	nonTerminal := []types.TaskState{
+		types.TaskStateWorking,
+		types.TaskStateSubmitted,
+		types.TaskStateUnspecified,
 	}
 	for _, s := range nonTerminal {
 		if isTerminalState(s) {
@@ -367,14 +368,14 @@ func TestIsTerminalState(t *testing.T) {
 func TestPartsToText(t *testing.T) {
 	a := "foo"
 	b := "bar"
-	parts := []adk.Part{{Text: &a}, {Data: nil}, {Text: &b}}
+	parts := []types.Part{{Text: &a}, {Data: nil}, {Text: &b}}
 	if got := partsToText(parts); got != "foobar" {
 		t.Errorf("expected 'foobar', got %q", got)
 	}
 }
 
 func TestHumanState(t *testing.T) {
-	if got := humanState(adk.TaskStateInputRequired); got != "input_required" {
+	if got := humanState(types.TaskStateInputRequired); got != "input_required" {
 		t.Errorf("expected 'input_required', got %q", got)
 	}
 }

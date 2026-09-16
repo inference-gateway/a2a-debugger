@@ -10,28 +10,29 @@ import (
 	"testing"
 	"time"
 
+	cobra "github.com/spf13/cobra"
+	zap "go.uber.org/zap"
+
 	client "github.com/inference-gateway/adk/client"
-	adk "github.com/inference-gateway/adk/types"
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
+	types "github.com/inference-gateway/adk/types"
 )
 
 // mockA2AClient implements the A2AClient interface for testing
 type mockA2AClient struct {
-	sendTaskStreamingFunc func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error)
-	sendTaskFunc          func(ctx context.Context, params adk.MessageSendParams) (*adk.JSONRPCSuccessResponse, error)
-	getTaskFunc           func(ctx context.Context, params adk.TaskQueryParams) (*adk.JSONRPCSuccessResponse, error)
-	getAgentCardFunc      func(ctx context.Context) (*adk.AgentCard, error)
+	sendTaskStreamingFunc func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error)
+	sendTaskFunc          func(ctx context.Context, params types.MessageSendParams) (*types.JSONRPCSuccessResponse, error)
+	getTaskFunc           func(ctx context.Context, params types.TaskQueryParams) (*types.JSONRPCSuccessResponse, error)
+	getAgentCardFunc      func(ctx context.Context) (*types.AgentCard, error)
 }
 
-func (m *mockA2AClient) GetAgentCard(ctx context.Context) (*adk.AgentCard, error) {
+func (m *mockA2AClient) GetAgentCard(ctx context.Context) (*types.AgentCard, error) {
 	if m.getAgentCardFunc != nil {
 		return m.getAgentCardFunc(ctx)
 	}
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) GetAuthenticatedExtendedCard(ctx context.Context, params adk.GetAuthenticatedExtendedCardParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) GetAuthenticatedExtendedCard(ctx context.Context, params types.GetAuthenticatedExtendedCardParams) (*types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -39,52 +40,52 @@ func (m *mockA2AClient) GetHealth(ctx context.Context) (*client.HealthResponse, 
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) ListTasks(ctx context.Context, params adk.TaskListParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) ListTasks(ctx context.Context, params types.TaskListParams) (*types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) GetTask(ctx context.Context, params adk.TaskQueryParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) GetTask(ctx context.Context, params types.TaskQueryParams) (*types.JSONRPCSuccessResponse, error) {
 	if m.getTaskFunc != nil {
 		return m.getTaskFunc(ctx, params)
 	}
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) SendTask(ctx context.Context, params adk.MessageSendParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) SendTask(ctx context.Context, params types.MessageSendParams) (*types.JSONRPCSuccessResponse, error) {
 	if m.sendTaskFunc != nil {
 		return m.sendTaskFunc(ctx, params)
 	}
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) SendTaskStreaming(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) SendTaskStreaming(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
 	if m.sendTaskStreamingFunc != nil {
 		return m.sendTaskStreamingFunc(ctx, params)
 	}
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) CancelTask(ctx context.Context, params adk.TaskIdParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) CancelTask(ctx context.Context, params types.TaskIdParams) (*types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) ResubscribeTask(ctx context.Context, params adk.TaskResubscriptionParams) (<-chan adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) ResubscribeTask(ctx context.Context, params types.TaskResubscriptionParams) (<-chan types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) SetTaskPushNotificationConfig(ctx context.Context, params adk.TaskPushNotificationConfig) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) SetTaskPushNotificationConfig(ctx context.Context, params types.TaskPushNotificationConfig) (*types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) GetTaskPushNotificationConfig(ctx context.Context, params adk.GetTaskPushNotificationConfigParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) GetTaskPushNotificationConfig(ctx context.Context, params types.GetTaskPushNotificationConfigParams) (*types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) ListTaskPushNotificationConfig(ctx context.Context, params adk.ListTaskPushNotificationConfigParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) ListTaskPushNotificationConfig(ctx context.Context, params types.ListTaskPushNotificationConfigParams) (*types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (m *mockA2AClient) DeleteTaskPushNotificationConfig(ctx context.Context, params adk.DeleteTaskPushNotificationConfigParams) (*adk.JSONRPCSuccessResponse, error) {
+func (m *mockA2AClient) DeleteTaskPushNotificationConfig(ctx context.Context, params types.DeleteTaskPushNotificationConfigParams) (*types.JSONRPCSuccessResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -114,22 +115,22 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 	logger = testLogger
 
 	mockClient := &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error) {
-			ch := make(chan adk.JSONRPCSuccessResponse, 3)
+		sendTaskStreamingFunc: func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
+			ch := make(chan types.JSONRPCSuccessResponse, 3)
 			textResponse := "Test response"
 			textCompleted := "Task completed"
 			textArtifact := "Test artifact content"
 
-			ch <- adk.JSONRPCSuccessResponse{
+			ch <- types.JSONRPCSuccessResponse{
 				Result: map[string]any{
 					"taskId":    "test-task-123",
 					"contextId": "test-context-456",
 					"final":     false,
 					"status": map[string]any{
-						"state": string(adk.TaskStateWorking),
+						"state": string(types.TaskStateWorking),
 						"message": map[string]any{
 							"messageId": "msg-123",
-							"role":      string(adk.RoleAgent),
+							"role":      string(types.RoleAgent),
 							"parts": []map[string]any{
 								{"text": textResponse},
 							},
@@ -138,7 +139,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 				},
 			}
 
-			ch <- adk.JSONRPCSuccessResponse{
+			ch <- types.JSONRPCSuccessResponse{
 				Result: map[string]any{
 					"taskId":    "test-task-123",
 					"contextId": "test-context-456",
@@ -151,16 +152,16 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 				},
 			}
 
-			ch <- adk.JSONRPCSuccessResponse{
+			ch <- types.JSONRPCSuccessResponse{
 				Result: map[string]any{
 					"taskId":    "test-task-123",
 					"contextId": "test-context-456",
 					"final":     true,
 					"status": map[string]any{
-						"state": string(adk.TaskStateCompleted),
+						"state": string(types.TaskStateCompleted),
 						"message": map[string]any{
 							"messageId": "msg-124",
-							"role":      string(adk.RoleAgent),
+							"role":      string(types.RoleAgent),
 							"parts": []map[string]any{
 								{"text": textCompleted},
 							},
@@ -202,7 +203,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 		"Streaming Summary:",
 		"Task ID: test-task-123",
 		"Context ID: test-context-456",
-		"Final Status: " + string(adk.TaskStateCompleted),
+		"Final Status: " + string(types.TaskStateCompleted),
 		"Duration:",
 		"Total Events: 3",
 		"Status Updates: 2",
@@ -225,15 +226,15 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 	logger = testLogger
 
 	mockClient := &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error) {
-			ch := make(chan adk.JSONRPCSuccessResponse, 1)
-			ch <- adk.JSONRPCSuccessResponse{
+		sendTaskStreamingFunc: func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
+			ch := make(chan types.JSONRPCSuccessResponse, 1)
+			ch <- types.JSONRPCSuccessResponse{
 				Result: map[string]any{
 					"taskId":    "test-task-456",
 					"contextId": "test-context-789",
 					"final":     true,
 					"status": map[string]any{
-						"state": string(adk.TaskStateCompleted),
+						"state": string(types.TaskStateCompleted),
 					},
 				},
 			}
@@ -272,7 +273,7 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 		"Streaming Summary:",
 		"Task ID: test-task-456",
 		"Context ID: test-context-789",
-		"Final Status: " + string(adk.TaskStateCompleted),
+		"Final Status: " + string(types.TaskStateCompleted),
 		"Total Events: 1",
 		"Status Updates: 1",
 		"Artifact Updates: 0",
@@ -293,19 +294,19 @@ func TestSubmitStreamingTaskCmd_TaskSnapshot(t *testing.T) {
 	logger = testLogger
 
 	mockClient := &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params adk.MessageSendParams) (<-chan adk.JSONRPCSuccessResponse, error) {
-			ch := make(chan adk.JSONRPCSuccessResponse, 1)
+		sendTaskStreamingFunc: func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
+			ch := make(chan types.JSONRPCSuccessResponse, 1)
 			finalText := "All done"
-			ch <- adk.JSONRPCSuccessResponse{
+			ch <- types.JSONRPCSuccessResponse{
 				Result: map[string]any{
 					"id":        "task-snapshot-1",
 					"contextId": "ctx-snapshot-1",
 					"history":   []map[string]any{},
 					"status": map[string]any{
-						"state": string(adk.TaskStateCompleted),
+						"state": string(types.TaskStateCompleted),
 						"message": map[string]any{
 							"messageId": "msg-final",
-							"role":      string(adk.RoleAgent),
+							"role":      string(types.RoleAgent),
 							"parts": []map[string]any{
 								{"text": finalText},
 							},
@@ -347,7 +348,7 @@ func TestSubmitStreamingTaskCmd_TaskSnapshot(t *testing.T) {
 		"Streaming Summary:",
 		"Task ID: task-snapshot-1",
 		"Context ID: ctx-snapshot-1",
-		"Final Status: " + string(adk.TaskStateCompleted),
+		"Final Status: " + string(types.TaskStateCompleted),
 		"Total Events: 1",
 		"Status Updates: 0",
 		"Artifact Updates: 0",

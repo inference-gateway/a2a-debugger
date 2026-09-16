@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
+	viper "github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v3"
 )
 
 func TestGetOutputFormat(t *testing.T) {

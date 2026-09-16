@@ -3,22 +3,23 @@ package cli
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	adk "github.com/inference-gateway/adk/types"
+	bubbletea "github.com/charmbracelet/bubbletea"
+
+	types "github.com/inference-gateway/adk/types"
 )
 
 // streamEvent builds a final status-update event like the mock-agent emits.
-func streamEvent(taskID, contextID, text string) adk.JSONRPCSuccessResponse {
-	return adk.JSONRPCSuccessResponse{
+func streamEvent(taskID, contextID, text string) types.JSONRPCSuccessResponse {
+	return types.JSONRPCSuccessResponse{
 		Result: map[string]any{
 			"taskId":    taskID,
 			"contextId": contextID,
 			"final":     true,
 			"status": map[string]any{
-				"state": string(adk.TaskStateCompleted),
+				"state": string(types.TaskStateCompleted),
 				"message": map[string]any{
 					"messageId": "m-" + taskID,
-					"role":      string(adk.RoleAgent),
+					"role":      string(types.RoleAgent),
 					"parts":     []map[string]any{{"text": text}},
 				},
 			},
@@ -39,7 +40,7 @@ func otherSessionID(m interactiveModel, exclude string) string {
 func TestMultiSession_NoStateBleed(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "http://mock:8080", "MockAgent", "ctx-A")
 	// Make it ready so refreshViewport is a no-op-safe path via WindowSize.
-	mi, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	mi, _ := m.Update(bubbletea.WindowSizeMsg{Width: 80, Height: 24})
 	m = mi.(interactiveModel)
 
 	// Session A: user turn + agent reply from "mock-agent".
@@ -129,7 +130,7 @@ func TestMultiSession_NoStateBleed(t *testing.T) {
 
 func TestMultiSession_ShortIDLookup(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "http://mock:8080", "MockAgent", "ctx-A")
-	mi, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	mi, _ := m.Update(bubbletea.WindowSizeMsg{Width: 80, Height: 24})
 	m = mi.(interactiveModel)
 
 	// Create a new session with a UUID (like /new does).
