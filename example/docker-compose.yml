@@ -34,7 +34,7 @@ services:
   # http://keycloak:8080 so tokens requested from the host (port 8081) carry the
   # same iss the agent discovers on the compose network.
   keycloak:
-    image: quay.io/keycloak/keycloak:26.3.2
+    image: quay.io/keycloak/keycloak:26.7.4
     profiles: [auth]
     command: start-dev --import-realm
     environment:
