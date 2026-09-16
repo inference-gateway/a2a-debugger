@@ -1,5 +1,7 @@
+auth-header: Authorization
 debug: false
 insecure: false
 output: yaml
 server-url: http://a2a-server:8080
 timeout: 30s
+token: ""

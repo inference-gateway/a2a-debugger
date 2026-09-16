@@ -61,6 +61,9 @@ func TestAuthCmd_Success(t *testing.T) {
 		getAgentCardFunc: func(ctx context.Context) (*types.AgentCard, error) {
 			return agentCardWithExtended(true), nil
 		},
+		listTasksFunc: func(ctx context.Context, params types.TaskListParams) (*types.JSONRPCSuccessResponse, error) {
+			return &types.JSONRPCSuccessResponse{}, nil
+		},
 		getAuthenticatedExtendedCardFunc: func(ctx context.Context, params types.GetAuthenticatedExtendedCardParams) (*types.JSONRPCSuccessResponse, error) {
 			called = true
 			return &types.JSONRPCSuccessResponse{
@@ -85,9 +88,14 @@ func TestAuthCmd_Success(t *testing.T) {
 }
 
 func TestAuthCmd_ExtendedCardUnsupported(t *testing.T) {
+	probed := false
 	mock := &mockA2AClient{
 		getAgentCardFunc: func(ctx context.Context) (*types.AgentCard, error) {
 			return agentCardWithExtended(false), nil
+		},
+		listTasksFunc: func(ctx context.Context, params types.TaskListParams) (*types.JSONRPCSuccessResponse, error) {
+			probed = true
+			return nil, fmt.Errorf(`{"error":{"code":-32601,"message":"method not found"}}`)
 		},
 		getAuthenticatedExtendedCardFunc: func(ctx context.Context, params types.GetAuthenticatedExtendedCardParams) (*types.JSONRPCSuccessResponse, error) {
 			t.Error("Expected the extended card RPC not to be called")
@@ -96,11 +104,39 @@ func TestAuthCmd_ExtendedCardUnsupported(t *testing.T) {
 	}
 
 	output, err := runAuthCmd(t, mock)
-	if err == nil {
-		t.Fatal("Expected an error, got nil")
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
 	}
-	if !strings.Contains(output, "authenticated: false") {
-		t.Errorf("Expected output to contain 'authenticated: false', got:\n%s", output)
+	if !probed {
+		t.Error("Expected tasks/list to be called")
+	}
+	for _, want := range []string{"authenticated: true", "extended_card_supported: false"} {
+		if !strings.Contains(output, want) {
+			t.Errorf("Expected output to contain %q, got:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "extended_card:") {
+		t.Errorf("Expected no extended_card in output, got:\n%s", output)
+	}
+}
+
+func TestAuthCmd_Rejected401(t *testing.T) {
+	mock := &mockA2AClient{
+		getAgentCardFunc: func(ctx context.Context) (*types.AgentCard, error) {
+			return agentCardWithExtended(true), nil
+		},
+		listTasksFunc: func(ctx context.Context, params types.TaskListParams) (*types.JSONRPCSuccessResponse, error) {
+			return nil, fmt.Errorf(`unexpected status code: 401, body: {"error":"invalid_token"}`)
+		},
+		getAuthenticatedExtendedCardFunc: func(ctx context.Context, params types.GetAuthenticatedExtendedCardParams) (*types.JSONRPCSuccessResponse, error) {
+			t.Error("Expected the extended card RPC not to be called")
+			return nil, nil
+		},
+	}
+
+	_, err := runAuthCmd(t, mock)
+	if err == nil || !strings.Contains(err.Error(), "Authentication rejected") {
+		t.Fatalf("Expected an 'Authentication rejected' error, got: %v", err)
 	}
 }
 
@@ -120,6 +156,9 @@ func TestAuthCmd_RPCErrorsAreFriendly(t *testing.T) {
 			mock := &mockA2AClient{
 				getAgentCardFunc: func(ctx context.Context) (*types.AgentCard, error) {
 					return agentCardWithExtended(true), nil
+				},
+				listTasksFunc: func(ctx context.Context, params types.TaskListParams) (*types.JSONRPCSuccessResponse, error) {
+					return &types.JSONRPCSuccessResponse{}, nil
 				},
 				getAuthenticatedExtendedCardFunc: func(ctx context.Context, params types.GetAuthenticatedExtendedCardParams) (*types.JSONRPCSuccessResponse, error) {
 					return nil, tt.rpcErr

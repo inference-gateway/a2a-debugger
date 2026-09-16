@@ -177,6 +177,14 @@ func authHeader() (string, string) {
 	return name, token
 }
 
+// isJSONRPCError reports whether err carries a JSON-RPC error object, i.e. the server dispatched the request
+func isJSONRPCError(err error) bool {
+	var jsonErr struct {
+		Error *types.JSONRPCError `json:"error,omitempty"`
+	}
+	return json.Unmarshal([]byte(err.Error()), &jsonErr) == nil && jsonErr.Error != nil
+}
+
 // ensureA2AClient initializes the A2A client if it hasn't been initialized yet
 func ensureA2AClient() {
 	if a2aClient == nil {
@@ -361,7 +369,9 @@ var connectCmd = &cobra.Command{
 var authCmd = &cobra.Command{
 	Use:   "auth [token]",
 	Short: "Verify a credential against the A2A server",
-	Long: `Verifies a credential by fetching the authenticated extended agent card.
+	Long: `Verifies a credential by sending one authenticated request (tasks/list) and,
+when the public card advertises supportsExtendedAgentCard, fetching the authenticated
+extended agent card as well.
 
 The token is obtained out of band (for example from your identity provider) and is
 sent in the header named by --auth-header (default Authorization, where the value is
@@ -380,38 +390,39 @@ prefixed with "Bearer ").`,
 
 		header, _ := authHeader()
 
-		if agentCard.SupportsExtendedAgentCard == nil || !*agentCard.SupportsExtendedAgentCard {
-			if err := printFormatted(map[string]any{
-				"authenticated":    false,
-				"reason":           "the agent card does not advertise supportsExtendedAgentCard, so the credential cannot be verified",
-				"security_schemes": agentCard.SecuritySchemes,
-			}); err != nil {
-				return err
+		// ponytail: auth is checked before dispatch, so a JSON-RPC error (e.g. method not found) still proves the credential was accepted
+		if _, err := a2aClient.ListTasks(ctx, types.TaskListParams{Limit: 1}); err != nil && !isJSONRPCError(err) {
+			return handleA2AError(err, "tasks/list")
+		}
+
+		result := map[string]any{
+			"authenticated":           true,
+			"header":                  header,
+			"security_schemes":        agentCard.SecuritySchemes,
+			"extended_card_supported": false,
+		}
+
+		if agentCard.SupportsExtendedAgentCard != nil && *agentCard.SupportsExtendedAgentCard {
+			resp, err := a2aClient.GetAuthenticatedExtendedCard(ctx, types.GetAuthenticatedExtendedCardParams{})
+			if err != nil {
+				return handleA2AError(err, "agent/getAuthenticatedExtendedCard")
 			}
-			return fmt.Errorf("❌ Agent does not support the authenticated extended card")
+
+			resultBytes, err := json.Marshal(resp.Result)
+			if err != nil {
+				return fmt.Errorf("failed to marshal response: %w", err)
+			}
+
+			var extendedCard types.AgentCard
+			if err := json.Unmarshal(resultBytes, &extendedCard); err != nil {
+				return fmt.Errorf("failed to unmarshal extended agent card: %w", err)
+			}
+
+			result["extended_card_supported"] = true
+			result["extended_card"] = extendedCard
 		}
 
-		resp, err := a2aClient.GetAuthenticatedExtendedCard(ctx, types.GetAuthenticatedExtendedCardParams{})
-		if err != nil {
-			return handleA2AError(err, "agent/getAuthenticatedExtendedCard")
-		}
-
-		resultBytes, err := json.Marshal(resp.Result)
-		if err != nil {
-			return fmt.Errorf("failed to marshal response: %w", err)
-		}
-
-		var extendedCard types.AgentCard
-		if err := json.Unmarshal(resultBytes, &extendedCard); err != nil {
-			return fmt.Errorf("failed to unmarshal extended agent card: %w", err)
-		}
-
-		return printFormatted(map[string]any{
-			"authenticated":    true,
-			"header":           header,
-			"security_schemes": agentCard.SecuritySchemes,
-			"extended_card":    extendedCard,
-		})
+		return printFormatted(result)
 	},
 }
 

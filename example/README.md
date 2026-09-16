@@ -151,6 +151,39 @@ docker compose run --rm a2a-debugger --help
 docker compose run --rm a2a-debugger tasks --help
 ```
 
+### Authentication
+
+`a2a-server-auth` is the same mock agent with `A2A_AUTH_ENABLED=true`. It verifies bearer tokens
+against a local Keycloak (realm `inference-gateway-realm`, confidential client
+`inference-gateway-client` with a service account). The agent only checks signatures against the
+issuer's public keys, so it never sees the client secret; only the token request does. Per the A2A
+spec the token is obtained out of band and the debugger only transmits it.
+
+```bash
+# Start Keycloak + the auth-enabled agent (returns once the realm is imported)
+docker compose --profile auth up -d --wait
+
+# Get a token from Keycloak (client credentials grant, Keycloak is published on :8081)
+TOKEN=$(curl -s http://localhost:8081/realms/inference-gateway-realm/protocol/openid-connect/token \
+  -d grant_type=client_credentials -d client_id=inference-gateway-client -d client_secret=very-secret \
+  | jq -r .access_token)
+
+# Without a token: 401
+docker compose run --rm a2a-debugger tasks list --server-url http://a2a-server-auth:8080
+
+# Verify the token (one authenticated request; fetches the extended card if the agent advertises one)
+docker compose run --rm a2a-debugger auth "$TOKEN" --server-url http://a2a-server-auth:8080
+
+# Use it with any other command, as a flag or via the TOKEN env var
+docker compose run --rm a2a-debugger tasks submit "Hello" --server-url http://a2a-server-auth:8080 --token "$TOKEN"
+docker compose run --rm -e TOKEN a2a-debugger tasks list --server-url http://a2a-server-auth:8080
+```
+
+The mock agent has no extended card, so `auth` reports `extended_card_supported: false`; agents
+built with `WithExtendedAgentCard()` return the extended card too. Nothing here is
+Keycloak-specific: any OpenID Connect issuer works, see the
+[ADK provider table](https://github.com/inference-gateway/adk/blob/main/docs/authentication.md#other-identity-providers).
+
 ## 📝 Notes
 
 - The a2a-server runs the [`mock-agent`](https://github.com/inference-gateway/mock-agent) image, which uses a mock LLM client - no API keys required

@@ -28,6 +28,54 @@ services:
     networks:
       - a2a-network
 
+  # --- Authentication (docker compose --profile auth up -d --wait) ---------------
+  # Keycloak with the demo realm (inference-gateway-realm) and a confidential
+  # client with a service account. KC_HOSTNAME pins the issuer to
+  # http://keycloak:8080 so tokens requested from the host (port 8081) carry the
+  # same iss the agent discovers on the compose network.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.2
+    profiles: [auth]
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://keycloak:8080
+      KC_HEALTH_ENABLED: 'true'
+    ports:
+      - '8081:8080'
+    volumes:
+      - ./keycloak/realm-import.json:/opt/keycloak/data/import/realm-import.json:ro
+    # Ready only once the realm import finished; the image has no curl, bash /dev/tcp will do.
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    networks:
+      - a2a-network
+
+  # The same mock agent with OIDC enforced. It only verifies tokens against the
+  # issuer's public keys, so it needs the issuer and the expected audience, never a secret.
+  a2a-server-auth:
+    image: ghcr.io/inference-gateway/mock-agent:latest
+    profiles: [auth]
+    pull_policy: always
+    environment:
+      A2A_AGENT_URL: 'http://a2a-server-auth:8080'
+      A2A_AUTH_ENABLED: 'true'
+      A2A_AUTH_ISSUER_URL: 'http://keycloak:8080/realms/inference-gateway-realm'
+      A2A_AUTH_CLIENT_ID: 'inference-gateway-client'
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - a2a-network
+
 networks:
   a2a-network:
     driver: bridge
