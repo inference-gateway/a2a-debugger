@@ -19,7 +19,7 @@ Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try th
 
 ## Architecture
 
-**Single-package CLI.** All commands, flag wiring, viper bindings, output helpers, and the JSON-RPC error normalizer live in `cli/cli.go`; `main.go` is just `cli.Execute(version, commit, date)`. Add a command by declaring `var fooCmd = &cobra.Command{...}` in `cli.go`, registering it in `init()` under `tasksCmd` or `rootCmd`, and wiring flags there. Namespaces: `config` (set/get/list, viper-backed) and `tasks` (list/get/history/submit/submit-streaming); `connect`, `agent-card`, `auth`, `interactive`, and `version` sit on root.
+**Single-package CLI.** Commands, flag wiring, viper bindings, output helpers, and the JSON-RPC error normalizer live in `cli/cli.go`; the Bubble Tea chat UI lives in `cli/interactive.go`; `main.go` is just `cli.Execute(version, commit, date)`. Add a command by declaring `var fooCmd = &cobra.Command{...}` in `cli.go`, registering it in `init()` under `tasksCmd` or `rootCmd`, and wiring flags there. Namespaces: `config` (set/get/list, viper-backed) and `tasks` (list/get/history/submit/submit-streaming); `connect`, `agent-card`, `auth`, `interactive`, and `version` sit on root.
 
 **Lazy A2A client.** The `a2aClient` package-global stays `nil` until `ensureA2AClient()` is called inside a command's `RunE`. Never call `initA2AClient()` at package init — it needs viper config and the logger.
 
@@ -31,11 +31,11 @@ Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try th
 
 ## Testing
 
-Tests in `cli/cli_test.go` swap the `a2aClient` package-global with a `mockA2AClient` satisfying `client.A2AClient`. Always save and restore the original (`originalClient := a2aClient` … `a2aClient = originalClient`), and capture stdout via the `os.Pipe()` swap of `os.Stdout`.
+Tests live in `cli/*_test.go` (`cli_test.go`, `auth_test.go`, `cli_output_test.go`, `interactive_multisession_test.go`) and swap the `a2aClient` package-global with a `mockA2AClient` satisfying `client.A2AClient`. Always save and restore the original (`originalClient := a2aClient` … `a2aClient = originalClient`), and capture stdout via the `os.Pipe()` swap of `os.Stdout`.
 
 ## Conventions
 
-- **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor; `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch; breaking → major. Capitalized descriptions (`feat(client): Add retry mechanism`). `chore(release):` is reserved for the release bot.
+- **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor; `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch; breaking → major. Lowercase descriptions (`feat(client): add retry mechanism`). `chore(release):` is reserved for the release bot.
 - **Import order and naming** are enforced by golangci-lint (see `.golangci.yml`): the `gci` formatter groups imports as standard library, `github.com/stretchr/testify`, third-party (`default`), `github.com/inference-gateway/*`, then this module; the `importas` linter requires every non-standard-library import to be named after its last path element (`cobra "github.com/spf13/cobra"`). Fix locally with `golangci-lint fmt` and `golangci-lint run --fix`.
 - **Go version is pinned in `go.mod` (1.26.7)**; CI reads it via `go-version-file`.
 - **Config is `~/.a2a.yaml`**, loaded by viper; `viper.AutomaticEnv()` means `SERVER_URL=...` overrides `server-url`.
