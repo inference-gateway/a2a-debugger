@@ -47,7 +47,7 @@ Follow normal Go style: `gofmt` formatting, tabs for indentation, short package 
 
 ## Conventions to honor
 
-- **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor, `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch, breaking changes → major. Use capitalized descriptions (`feat(client): Add retry mechanism`). `chore(release): ...` is reserved for the release bot.
+- **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor, `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch, breaking changes → major. Use lowercase descriptions (`feat(client): add retry mechanism`). `chore(release): ...` is reserved for the release bot.
 - **Import order and naming** are enforced by golangci-lint (see `.golangci.yml`): the `gci` formatter groups imports as standard library, `github.com/stretchr/testify`, third-party (`default`), `github.com/inference-gateway/*`, then this module; the `importas` linter requires every non-standard-library import to be named after its last path element (`cobra "github.com/spf13/cobra"`). Fix locally with `golangci-lint fmt` and `golangci-lint run --fix`.
 - **CI fails on dirty `go.mod` after `task tidy`.** The CI job runs `task tidy` then `git diff --exit-code`. Always run `task tidy` locally before committing dependency changes.
 - **Go version is pinned in `go.mod` (1.26.7).** CI uses `go-version-file: 'go.mod'` — bump `go.mod` if you need a newer toolchain.
