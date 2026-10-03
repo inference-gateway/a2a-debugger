@@ -780,6 +780,15 @@ func humanState(s types.TaskState) string {
 	return strings.ToLower(strings.TrimPrefix(string(s), "TASK_STATE_"))
 }
 
+// messageLabel names the sender of a status message, so a task snapshot that
+// still carries the user's own prompt isn't printed as the agent's response.
+func messageLabel(role types.Role) string {
+	if role == types.RoleUser {
+		return "User Message"
+	}
+	return "Agent Response"
+}
+
 func shortID(id string) string {
 	if len(id) <= 8 {
 		return id

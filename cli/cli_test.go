@@ -210,7 +210,7 @@ func TestSubmitStreamingTaskCmd_StreamingSummary(t *testing.T) {
 		"Streaming Summary:",
 		"Task ID: test-task-123",
 		"Context ID: test-context-456",
-		"Final Status: " + string(types.TaskStateCompleted),
+		"Final Status: " + humanState(types.TaskStateCompleted),
 		"Duration:",
 		"Total Events: 3",
 		"Status Updates: 2",
@@ -279,7 +279,7 @@ func TestSubmitStreamingTaskCmd_RawMode(t *testing.T) {
 		"Streaming Summary:",
 		"Task ID: test-task-456",
 		"Context ID: test-context-789",
-		"Final Status: " + string(types.TaskStateCompleted),
+		"Final Status: " + humanState(types.TaskStateCompleted),
 		"Total Events: 1",
 		"Status Updates: 1",
 		"Artifact Updates: 0",
@@ -354,7 +354,7 @@ func TestSubmitStreamingTaskCmd_TaskSnapshot(t *testing.T) {
 		"Streaming Summary:",
 		"Task ID: task-snapshot-1",
 		"Context ID: ctx-snapshot-1",
-		"Final Status: " + string(types.TaskStateCompleted),
+		"Final Status: " + humanState(types.TaskStateCompleted),
 		"Total Events: 1",
 		"Status Updates: 0",
 		"Artifact Updates: 0",
@@ -365,5 +365,31 @@ func TestSubmitStreamingTaskCmd_TaskSnapshot(t *testing.T) {
 		if !strings.Contains(output, part) {
 			t.Errorf("Expected output to contain '%s', but it didn't.\nActual output:\n%s", part, output)
 		}
+	}
+}
+
+func TestTaskStateFromFlag(t *testing.T) {
+	tests := []struct {
+		flag  string
+		want  types.TaskState
+		valid bool
+	}{
+		{flag: "working", want: types.TaskStateWorking, valid: true},
+		{flag: "COMPLETED", want: types.TaskStateCompleted, valid: true},
+		{flag: "input-required", want: types.TaskStateInputRequired, valid: true},
+		{flag: "TASK_STATE_FAILED", want: types.TaskStateFailed, valid: true},
+		{flag: "bogus", want: types.TaskState("TASK_STATE_BOGUS"), valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.flag, func(t *testing.T) {
+			got := taskStateFromFlag(tt.flag)
+			if got != tt.want {
+				t.Errorf("taskStateFromFlag(%q) = %q, want %q", tt.flag, got, tt.want)
+			}
+			if got.Valid() != tt.valid {
+				t.Errorf("taskStateFromFlag(%q).Valid() = %v, want %v", tt.flag, got.Valid(), tt.valid)
+			}
+		})
 	}
 }

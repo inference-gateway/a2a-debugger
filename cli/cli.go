@@ -432,6 +432,17 @@ prefixed with "Bearer ").`,
 	},
 }
 
+// taskStateFromFlag maps the friendly --state values the README documents
+// ("working", "input-required") onto the A2A v1.0.1 enum ("TASK_STATE_WORKING").
+// A value that already carries the prefix is passed through untouched.
+func taskStateFromFlag(state string) types.TaskState {
+	normalized := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(state), "-", "_"))
+	if !strings.HasPrefix(normalized, "TASK_STATE_") {
+		normalized = "TASK_STATE_" + normalized
+	}
+	return types.TaskState(normalized)
+}
+
 var listTasksCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available tasks and their statuses",
@@ -458,7 +469,10 @@ var listTasksCmd = &cobra.Command{
 		}
 
 		if state != "" {
-			taskState := types.TaskState(state)
+			taskState := taskStateFromFlag(state)
+			if !taskState.Valid() {
+				return fmt.Errorf("invalid --state %q", state)
+			}
 			params.Status = &taskState
 		}
 
@@ -792,7 +806,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				if streamingSummary.ContextID == "" {
 					streamingSummary.ContextID = event.StatusUpdate.ContextID
 				}
-				streamingSummary.FinalStatus = string(event.StatusUpdate.Status.State)
+				streamingSummary.FinalStatus = humanState(event.StatusUpdate.Status.State)
 				if event.StatusUpdate.Status.Message != nil {
 					streamingSummary.FinalMessage = event.StatusUpdate.Status.Message
 				}
@@ -811,7 +825,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 				if streamingSummary.ContextID == "" {
 					streamingSummary.ContextID = event.Task.GetContextID()
 				}
-				streamingSummary.FinalStatus = string(event.Task.Status.State)
+				streamingSummary.FinalStatus = humanState(event.Task.Status.State)
 				if event.Task.Status.Message != nil {
 					streamingSummary.FinalMessage = event.Task.Status.Message
 				}
@@ -831,14 +845,14 @@ var submitStreamingTaskCmd = &cobra.Command{
 			case event.StatusUpdate != nil:
 				statusEvent := event.StatusUpdate
 
-				fmt.Printf("📊 Status Update: %s", statusEvent.Status.State)
+				fmt.Printf("📊 Status Update: %s", humanState(statusEvent.Status.State))
 				if statusEvent.Status.Message != nil {
 					fmt.Printf(" (Message: %s)", statusEvent.Status.Message.MessageID)
 				}
 				fmt.Printf("\n")
 
 				if statusEvent.Status.Message != nil && len(statusEvent.Status.Message.Parts) > 0 {
-					fmt.Printf("\n💬 Agent Response:\n")
+					fmt.Printf("\n💬 %s:\n", messageLabel(statusEvent.Status.Message.Role))
 					for _, part := range statusEvent.Status.Message.Parts {
 						if part.Text != nil {
 							fmt.Printf("%s\n", *part.Text)
@@ -878,9 +892,9 @@ var submitStreamingTaskCmd = &cobra.Command{
 			case event.Task != nil:
 				task := event.Task
 
-				fmt.Printf("📦 Task Snapshot: %s [%s]\n", task.ID, task.Status.State)
+				fmt.Printf("📦 Task Snapshot: %s [%s]\n", task.ID, humanState(task.Status.State))
 				if task.Status.Message != nil && len(task.Status.Message.Parts) > 0 {
-					fmt.Printf("\n💬 Agent Response:\n")
+					fmt.Printf("\n💬 %s:\n", messageLabel(task.Status.Message.Role))
 					for _, part := range task.Status.Message.Parts {
 						if part.Text != nil {
 							fmt.Printf("%s\n", *part.Text)

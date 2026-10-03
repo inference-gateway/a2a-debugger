@@ -33,6 +33,8 @@ Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try th
 
 Tests live in `cli/*_test.go` (`cli_test.go`, `auth_test.go`, `cli_output_test.go`, `interactive_multisession_test.go`) and swap the `a2aClient` package-global with a `mockA2AClient` satisfying `client.A2AClient`. Always save and restore the original (`originalClient := a2aClient` … `a2aClient = originalClient`), and capture stdout via the `os.Pipe()` swap of `os.Stdout`.
 
+`cli/e2e_test.go` is the exception: it boots a real `adk/server` on a free port with an echo handler and drives `rootCmd` over the wire, so an ADK change that breaks `connect`, `agent-card` or any `tasks` subcommand fails in `task test` rather than only when someone runs `example/docker-compose.yml`. It is the reason the root `go.mod` carries the ADK server's dependencies (gin, otel, …) as test-only indirects; nothing the shipped binary imports.
+
 ## Conventions
 
 - **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor; `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch; breaking → major. Lowercase descriptions (`feat(client): add retry mechanism`). `chore(release):` is reserved for the release bot.
