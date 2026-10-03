@@ -11,16 +11,17 @@ import (
 // streamEvent builds a final status-update event like the mock-agent emits.
 func streamEvent(taskID, contextID, text string) types.JSONRPCSuccessResponse {
 	return types.JSONRPCSuccessResponse{
-		Result: map[string]any{
-			"taskId":    taskID,
-			"contextId": contextID,
-			"final":     true,
-			"status": map[string]any{
-				"state": string(types.TaskStateCompleted),
-				"message": map[string]any{
-					"messageId": "m-" + taskID,
-					"role":      string(types.RoleAgent),
-					"parts":     []map[string]any{{"text": text}},
+		Result: types.StreamResponse{
+			StatusUpdate: &types.TaskStatusUpdateEvent{
+				TaskID:    taskID,
+				ContextID: contextID,
+				Status: types.TaskStatus{
+					State: types.TaskStateCompleted,
+					Message: &types.Message{
+						MessageID: "m-" + taskID,
+						Role:      types.RoleAgent,
+						Parts:     []types.Part{{Text: &text}},
+					},
 				},
 			},
 		},

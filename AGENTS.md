@@ -1,6 +1,6 @@
 # AGENTS.md
 
-`a2a` is a Cobra-based CLI (binary name: `a2a`) for inspecting and exercising A2A (Agent-to-Agent) servers. It is a thin client around `github.com/inference-gateway/adk/client` — most commands are JSON-RPC calls (`tasks/list`, `tasks/get`, `message/send`, `message/stream`, `agent/card`) whose responses are rendered as YAML (default) or JSON.
+`a2a` is a Cobra-based CLI (binary name: `a2a`) for inspecting and exercising A2A (Agent-to-Agent) servers. It is a thin client around `github.com/inference-gateway/adk/client` — most commands are A2A v1.0.1 JSON-RPC calls (`ListTasks`, `GetTask`, `SendMessage`, `SendStreamingMessage`) plus the public agent card fetch, whose responses are rendered as YAML (default) or JSON.
 
 ## Build, test, lint
 
@@ -27,7 +27,7 @@ Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try th
 
 **JSON-RPC errors.** Wrap every `a2aClient.*` error with `handleA2AError(err, methodName)` so code `-32601` becomes "Method not implemented by the agent" (also maps `-32004`, `-32007`, and HTTP `401`).
 
-**Authentication.** The global `--token` / `--auth-header` flags are viper-bound; `initA2AClient()` puts the credential in `client.Config.Headers` via `authHeader()`, so every command inherits it. `GetAgentCard` / `GetHealth` deliberately stay unauthenticated (public endpoints). `auth` verifies a credential with one `tasks/list` probe (a `401` is a rejection, any JSON-RPC error still proves the request was dispatched) and fetches the extended card only when the public card advertises it. Streaming events are heuristically typed in `submit-streaming` by probing for `artifact`/`final`/`id` keys — update that switch when ADK adds event kinds.
+**Authentication.** The global `--token` / `--auth-header` flags are viper-bound; `initA2AClient()` puts the credential in `client.Config.Headers` via `authHeader()`, so every command inherits it. `GetAgentCard` / `GetHealth` deliberately stay unauthenticated (public endpoints). `auth` verifies a credential with one `ListTasks` probe (a `401` is a rejection, any JSON-RPC error still proves the request was dispatched) and fetches the extended card only when `AgentCard.Capabilities.ExtendedAgentCard` advertises it. Streaming events decode into `types.StreamResponse` and are dispatched on whichever of `StatusUpdate` / `ArtifactUpdate` / `Task` / `Message` is non-nil — extend that switch when ADK adds event kinds.
 
 ## Testing
 
