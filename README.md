@@ -200,7 +200,7 @@ Per the A2A spec the credential is obtained out of band; the debugger only trans
 The public agent card is always unauthenticated, every other request carries the token in
 the header named by `--auth-header` (for `Authorization` the value is prefixed with `Bearer `).
 
-`a2a auth <token>` verifies a credential by sending one authenticated request (`tasks/list`):
+`a2a auth <token>` verifies a credential by sending one authenticated request (`ListTasks`):
 a `401` means the server rejected it, anything else means it was accepted. When the public card
 advertises `supportsExtendedAgentCard`, the authenticated extended card is fetched and printed too.
 

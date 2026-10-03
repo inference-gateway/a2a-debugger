@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -192,8 +193,12 @@ func ensureA2AClient() {
 	}
 }
 
+// agentCardMethod labels the public agent card fetch, which is a plain HTTP GET
+// on the well-known path rather than one of the types.A2AMethod JSON-RPC methods.
+const agentCardMethod types.A2AMethod = "agent-card"
+
 // handleA2AError turns known JSON-RPC / HTTP failures into user-friendly messages
-func handleA2AError(err error, method string) error {
+func handleA2AError(err error, method types.A2AMethod) error {
 	if err == nil {
 		return nil
 	}
@@ -369,7 +374,7 @@ var connectCmd = &cobra.Command{
 var authCmd = &cobra.Command{
 	Use:   "auth [token]",
 	Short: "Verify a credential against the A2A server",
-	Long: `Verifies a credential by sending one authenticated request (tasks/list) and,
+	Long: `Verifies a credential by sending one authenticated request (ListTasks) and,
 when the public card advertises supportsExtendedAgentCard, fetching the authenticated
 extended agent card as well.
 
@@ -391,8 +396,9 @@ prefixed with "Bearer ").`,
 		header, _ := authHeader()
 
 		// ponytail: auth is checked before dispatch, so a JSON-RPC error (e.g. method not found) still proves the credential was accepted
-		if _, err := a2aClient.ListTasks(ctx, types.TaskListParams{Limit: 1}); err != nil && !isJSONRPCError(err) {
-			return handleA2AError(err, "tasks/list")
+		probePageSize := 1
+		if _, err := a2aClient.ListTasks(ctx, types.ListTasksRequest{PageSize: &probePageSize}); err != nil && !isJSONRPCError(err) {
+			return handleA2AError(err, types.A2AMethodListTasks)
 		}
 
 		result := map[string]any{
@@ -402,10 +408,10 @@ prefixed with "Bearer ").`,
 			"extended_card_supported": false,
 		}
 
-		if agentCard.SupportsExtendedAgentCard != nil && *agentCard.SupportsExtendedAgentCard {
-			resp, err := a2aClient.GetAuthenticatedExtendedCard(ctx, types.GetAuthenticatedExtendedCardParams{})
+		if agentCard.Capabilities.ExtendedAgentCard != nil && *agentCard.Capabilities.ExtendedAgentCard {
+			resp, err := a2aClient.GetAuthenticatedExtendedCard(ctx, types.GetExtendedAgentCardRequest{})
 			if err != nil {
-				return handleA2AError(err, "agent/getAuthenticatedExtendedCard")
+				return handleA2AError(err, types.A2AMethodGetExtendedAgentCard)
 			}
 
 			resultBytes, err := json.Marshal(resp.Result)
@@ -426,6 +432,17 @@ prefixed with "Bearer ").`,
 	},
 }
 
+// taskStateFromFlag maps the friendly --state values the README documents
+// ("working", "input-required") onto the A2A v1.0.1 enum ("TASK_STATE_WORKING").
+// A value that already carries the prefix is passed through untouched.
+func taskStateFromFlag(state string) types.TaskState {
+	normalized := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(state), "-", "_"))
+	if !strings.HasPrefix(normalized, "TASK_STATE_") {
+		normalized = "TASK_STATE_" + normalized
+	}
+	return types.TaskState(normalized)
+}
+
 var listTasksCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available tasks and their statuses",
@@ -441,14 +458,22 @@ var listTasksCmd = &cobra.Command{
 		includeHistory, _ := cmd.Flags().GetBool("include-history")
 		includeArtifacts, _ := cmd.Flags().GetBool("include-artifacts")
 
-		params := types.TaskListParams{
-			Limit:  limit,
-			Offset: offset,
+		params := types.ListTasksRequest{
+			PageSize: &limit,
+		}
+
+		// A2A v1.0.1 paginates by opaque page token; the ADK encodes the offset in it.
+		if offset > 0 {
+			pageToken := strconv.Itoa(offset)
+			params.PageToken = &pageToken
 		}
 
 		if state != "" {
-			taskState := types.TaskState(state)
-			params.State = &taskState
+			taskState := taskStateFromFlag(state)
+			if !taskState.Valid() {
+				return fmt.Errorf("invalid --state %q", state)
+			}
+			params.Status = &taskState
 		}
 
 		if contextID != "" {
@@ -459,7 +484,7 @@ var listTasksCmd = &cobra.Command{
 
 		resp, err := a2aClient.ListTasks(ctx, params)
 		if err != nil {
-			return handleA2AError(err, "tasks/list")
+			return handleA2AError(err, types.A2AMethodListTasks)
 		}
 
 		resultBytes, err := json.Marshal(resp.Result)
@@ -467,7 +492,7 @@ var listTasksCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal response: %w", err)
 		}
 
-		var taskList types.TaskList
+		var taskList types.ListTasksResponse
 		if err := json.Unmarshal(resultBytes, &taskList); err != nil {
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
@@ -516,7 +541,7 @@ var getTaskCmd = &cobra.Command{
 
 		historyLength, _ := cmd.Flags().GetInt("history-length")
 
-		params := types.TaskQueryParams{
+		params := types.GetTaskRequest{
 			ID: taskID,
 		}
 
@@ -528,7 +553,7 @@ var getTaskCmd = &cobra.Command{
 
 		resp, err := a2aClient.GetTask(ctx, params)
 		if err != nil {
-			return handleA2AError(err, "tasks/get")
+			return handleA2AError(err, types.A2AMethodGetTask)
 		}
 
 		resultBytes, err := json.Marshal(resp.Result)
@@ -555,16 +580,17 @@ var historyCmd = &cobra.Command{
 		ensureA2AClient()
 
 		ctx := context.Background()
-		params := types.TaskListParams{
+		historyPageSize := 100
+		params := types.ListTasksRequest{
 			ContextID: &contextID,
-			Limit:     100,
+			PageSize:  &historyPageSize,
 		}
 
 		logger.Debug("Getting conversation history", zap.String("context_id", contextID))
 
 		resp, err := a2aClient.ListTasks(ctx, params)
 		if err != nil {
-			return handleA2AError(err, "tasks/list")
+			return handleA2AError(err, types.A2AMethodListTasks)
 		}
 
 		resultBytes, err := json.Marshal(resp.Result)
@@ -572,7 +598,7 @@ var historyCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal response: %w", err)
 		}
 
-		var taskList types.TaskList
+		var taskList types.ListTasksResponse
 		if err := json.Unmarshal(resultBytes, &taskList); err != nil {
 			return fmt.Errorf("failed to unmarshal task list: %w", err)
 		}
@@ -598,7 +624,7 @@ var agentCardCmd = &cobra.Command{
 
 		agentCard, err := a2aClient.GetAgentCard(ctx)
 		if err != nil {
-			return handleA2AError(err, "agent-card")
+			return handleA2AError(err, agentCardMethod)
 		}
 
 		return printFormatted(agentCard)
@@ -657,7 +683,7 @@ var submitTaskCmd = &cobra.Command{
 
 		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
 
-		params := types.MessageSendParams{
+		params := types.SendMessageRequest{
 			Message: types.Message{
 				MessageID: messageID,
 				Role:      types.RoleUser,
@@ -679,17 +705,12 @@ var submitTaskCmd = &cobra.Command{
 
 		resp, err := a2aClient.SendTask(ctx, params)
 		if err != nil {
-			return handleA2AError(err, "message/send")
+			return handleA2AError(err, types.A2AMethodSendMessage)
 		}
 
-		resultBytes, err := json.Marshal(resp.Result)
+		task, err := taskFromResult(resp.Result)
 		if err != nil {
-			return fmt.Errorf("failed to marshal response: %w", err)
-		}
-
-		var task types.Task
-		if err := json.Unmarshal(resultBytes, &task); err != nil {
-			return fmt.Errorf("failed to unmarshal task: %w", err)
+			return err
 		}
 
 		output := map[string]any{
@@ -719,7 +740,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 		messageID := fmt.Sprintf("msg-%d", time.Now().Unix())
 		startTime := time.Now()
 
-		params := types.MessageSendParams{
+		params := types.SendMessageRequest{
 			Message: types.Message{
 				MessageID: messageID,
 				Role:      types.RoleUser,
@@ -741,7 +762,7 @@ var submitStreamingTaskCmd = &cobra.Command{
 
 		respChan, err := a2aClient.SendTaskStreaming(ctx, params)
 		if err != nil {
-			return handleA2AError(err, "message/stream")
+			return handleA2AError(err, types.A2AMethodSendStreamingMessage)
 		}
 
 		fmt.Printf("✅ Streaming task submitted successfully!\n\n")
@@ -770,66 +791,43 @@ var submitStreamingTaskCmd = &cobra.Command{
 				continue
 			}
 
-			var genericEvent map[string]any
-			if err := json.Unmarshal(eventJSON, &genericEvent); err != nil {
-				logger.Error("Failed to unmarshal generic event", zap.Error(err))
+			var event types.StreamResponse
+			if err := json.Unmarshal(eventJSON, &event); err != nil {
+				logger.Error("Failed to unmarshal stream event", zap.Error(err))
 				continue
 			}
 
-			_, hasArtifact := genericEvent["artifact"]
-			_, hasFinal := genericEvent["final"]
-			_, hasID := genericEvent["id"]
-
-			eventKind := ""
 			switch {
-			case hasArtifact:
-				eventKind = "artifact-update"
-			case hasFinal:
-				eventKind = "status-update"
-			case hasID:
-				eventKind = "task"
-			}
-
-			switch eventKind {
-			case "status-update":
+			case event.StatusUpdate != nil:
 				streamingSummary.StatusUpdates++
-				var statusEvent types.TaskStatusUpdateEvent
-				if err := json.Unmarshal(eventJSON, &statusEvent); err == nil {
-					if streamingSummary.TaskID == "" {
-						streamingSummary.TaskID = statusEvent.TaskID
-					}
-					if streamingSummary.ContextID == "" {
-						streamingSummary.ContextID = statusEvent.ContextID
-					}
-					streamingSummary.FinalStatus = string(statusEvent.Status.State)
-					if statusEvent.Status.Message != nil {
-						streamingSummary.FinalMessage = statusEvent.Status.Message
-					}
+				if streamingSummary.TaskID == "" {
+					streamingSummary.TaskID = event.StatusUpdate.TaskID
 				}
-			case "artifact-update":
+				if streamingSummary.ContextID == "" {
+					streamingSummary.ContextID = event.StatusUpdate.ContextID
+				}
+				streamingSummary.FinalStatus = humanState(event.StatusUpdate.Status.State)
+				if event.StatusUpdate.Status.Message != nil {
+					streamingSummary.FinalMessage = event.StatusUpdate.Status.Message
+				}
+			case event.ArtifactUpdate != nil:
 				streamingSummary.ArtifactUpdates++
-				var artifactEvent types.TaskArtifactUpdateEvent
-				if err := json.Unmarshal(eventJSON, &artifactEvent); err == nil {
-					if streamingSummary.TaskID == "" {
-						streamingSummary.TaskID = artifactEvent.TaskID
-					}
-					if streamingSummary.ContextID == "" {
-						streamingSummary.ContextID = artifactEvent.ContextID
-					}
+				if streamingSummary.TaskID == "" {
+					streamingSummary.TaskID = event.ArtifactUpdate.TaskID
 				}
-			case "task":
-				var task types.Task
-				if err := json.Unmarshal(eventJSON, &task); err == nil {
-					if streamingSummary.TaskID == "" {
-						streamingSummary.TaskID = task.ID
-					}
-					if streamingSummary.ContextID == "" {
-						streamingSummary.ContextID = task.ContextID
-					}
-					streamingSummary.FinalStatus = string(task.Status.State)
-					if task.Status.Message != nil {
-						streamingSummary.FinalMessage = task.Status.Message
-					}
+				if streamingSummary.ContextID == "" {
+					streamingSummary.ContextID = event.ArtifactUpdate.ContextID
+				}
+			case event.Task != nil:
+				if streamingSummary.TaskID == "" {
+					streamingSummary.TaskID = event.Task.ID
+				}
+				if streamingSummary.ContextID == "" {
+					streamingSummary.ContextID = event.Task.GetContextID()
+				}
+				streamingSummary.FinalStatus = humanState(event.Task.Status.State)
+				if event.Task.Status.Message != nil {
+					streamingSummary.FinalMessage = event.Task.Status.Message
 				}
 			}
 
@@ -840,89 +838,78 @@ var submitStreamingTaskCmd = &cobra.Command{
 					continue
 				}
 				fmt.Printf("📡 Raw Event:\n%s\n\n", eventJSONFormatted)
-			} else {
-				switch eventKind {
-				case "status-update":
-					var statusEvent types.TaskStatusUpdateEvent
-					if err := json.Unmarshal(eventJSON, &statusEvent); err != nil {
-						logger.Error("Failed to unmarshal status event", zap.Error(err))
-						continue
-					}
+				continue
+			}
 
-					fmt.Printf("📊 Status Update: %s", statusEvent.Status.State)
-					if statusEvent.Status.Message != nil {
-						fmt.Printf(" (Message: %s)", statusEvent.Status.Message.MessageID)
-					}
-					if statusEvent.Final {
-						fmt.Printf(" [FINAL]")
-					}
-					fmt.Printf("\n")
+			switch {
+			case event.StatusUpdate != nil:
+				statusEvent := event.StatusUpdate
 
-					if statusEvent.Status.Message != nil && len(statusEvent.Status.Message.Parts) > 0 {
-						fmt.Printf("\n💬 Agent Response:\n")
-						for _, part := range statusEvent.Status.Message.Parts {
-							if part.Text != nil {
-								fmt.Printf("%s\n", *part.Text)
-							}
-						}
-						fmt.Printf("\n")
-					}
-
-				case "artifact-update":
-					var artifactEvent types.TaskArtifactUpdateEvent
-					if err := json.Unmarshal(eventJSON, &artifactEvent); err != nil {
-						logger.Error("Failed to unmarshal artifact event", zap.Error(err))
-						continue
-					}
-
-					fmt.Printf("📄 Artifact Update:\n")
-					fmt.Printf("  Artifact ID: %s\n", artifactEvent.Artifact.ArtifactID)
-					if artifactEvent.Artifact.Name != nil {
-						fmt.Printf("  Name: %s\n", *artifactEvent.Artifact.Name)
-					}
-					if artifactEvent.Artifact.Description != nil {
-						fmt.Printf("  Description: %s\n", *artifactEvent.Artifact.Description)
-					}
-					if len(artifactEvent.Artifact.Parts) > 0 {
-						fmt.Printf("  Parts:\n")
-						for i, part := range artifactEvent.Artifact.Parts {
-							switch {
-							case part.Text != nil:
-								fmt.Printf("    Part %d: [text] %s\n", i+1, *part.Text)
-							case part.File != nil:
-								fmt.Printf("    Part %d: [file] %s\n", i+1, part.File.Name)
-							case part.Data != nil:
-								fmt.Printf("    Part %d: [data]\n", i+1)
-							}
-						}
-					}
-					if artifactEvent.LastChunk != nil && *artifactEvent.LastChunk {
-						fmt.Printf("  [LAST CHUNK]\n")
-					}
-
-				case "task":
-					var task types.Task
-					if err := json.Unmarshal(eventJSON, &task); err != nil {
-						logger.Error("Failed to unmarshal task snapshot", zap.Error(err))
-						continue
-					}
-
-					fmt.Printf("📦 Task Snapshot: %s [%s]\n", task.ID, task.Status.State)
-					if task.Status.Message != nil && len(task.Status.Message.Parts) > 0 {
-						fmt.Printf("\n💬 Agent Response:\n")
-						for _, part := range task.Status.Message.Parts {
-							if part.Text != nil {
-								fmt.Printf("%s\n", *part.Text)
-							}
-						}
-						fmt.Printf("\n")
-					}
-
-				default:
-					fmt.Printf("🔔 Unknown Event\n")
+				fmt.Printf("📊 Status Update: %s", humanState(statusEvent.Status.State))
+				if statusEvent.Status.Message != nil {
+					fmt.Printf(" (Message: %s)", statusEvent.Status.Message.MessageID)
 				}
 				fmt.Printf("\n")
+
+				if statusEvent.Status.Message != nil && len(statusEvent.Status.Message.Parts) > 0 {
+					fmt.Printf("\n💬 %s:\n", messageLabel(statusEvent.Status.Message.Role))
+					for _, part := range statusEvent.Status.Message.Parts {
+						if part.Text != nil {
+							fmt.Printf("%s\n", *part.Text)
+						}
+					}
+					fmt.Printf("\n")
+				}
+
+			case event.ArtifactUpdate != nil:
+				artifactEvent := event.ArtifactUpdate
+
+				fmt.Printf("📄 Artifact Update:\n")
+				fmt.Printf("  Artifact ID: %s\n", artifactEvent.Artifact.ArtifactID)
+				if artifactEvent.Artifact.Name != nil {
+					fmt.Printf("  Name: %s\n", *artifactEvent.Artifact.Name)
+				}
+				if artifactEvent.Artifact.Description != nil {
+					fmt.Printf("  Description: %s\n", *artifactEvent.Artifact.Description)
+				}
+				if len(artifactEvent.Artifact.Parts) > 0 {
+					fmt.Printf("  Parts:\n")
+					for i, part := range artifactEvent.Artifact.Parts {
+						switch {
+						case part.Text != nil:
+							fmt.Printf("    Part %d: [text] %s\n", i+1, *part.Text)
+						case part.Filename != nil:
+							fmt.Printf("    Part %d: [file] %s\n", i+1, *part.Filename)
+						case part.Data != nil:
+							fmt.Printf("    Part %d: [data]\n", i+1)
+						}
+					}
+				}
+				if artifactEvent.LastChunk != nil && *artifactEvent.LastChunk {
+					fmt.Printf("  [LAST CHUNK]\n")
+				}
+
+			case event.Task != nil:
+				task := event.Task
+
+				fmt.Printf("📦 Task Snapshot: %s [%s]\n", task.ID, humanState(task.Status.State))
+				if task.Status.Message != nil && len(task.Status.Message.Parts) > 0 {
+					fmt.Printf("\n💬 %s:\n", messageLabel(task.Status.Message.Role))
+					for _, part := range task.Status.Message.Parts {
+						if part.Text != nil {
+							fmt.Printf("%s\n", *part.Text)
+						}
+					}
+					fmt.Printf("\n")
+				}
+
+			case event.Message != nil:
+				fmt.Printf("💬 Agent Message: %s\n", partsToText(event.Message.Parts))
+
+			default:
+				fmt.Printf("🔔 Unknown Event\n")
 			}
+			fmt.Printf("\n")
 		}
 
 		duration := time.Since(startTime)

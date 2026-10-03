@@ -383,9 +383,9 @@ func (m interactiveModel) handleSlashCommand(text string) (bubbletea.Model, bubb
 	}
 }
 
-func (m interactiveModel) buildParams(text string) types.MessageSendParams {
+func (m interactiveModel) buildParams(text string) types.SendMessageRequest {
 	contextID := m.contextID
-	params := types.MessageSendParams{
+	params := types.SendMessageRequest{
 		Message: types.Message{
 			MessageID: uuid.NewString(),
 			Role:      types.RoleUser,
@@ -434,32 +434,22 @@ func (m *interactiveModel) applyStreamEvent(resp types.JSONRPCSuccessResponse) {
 		return
 	}
 
-	var generic map[string]any
-	if err := json.Unmarshal(eventJSON, &generic); err != nil {
+	var event types.StreamResponse
+	if err := json.Unmarshal(eventJSON, &event); err != nil {
 		return
 	}
 
-	_, hasArtifact := generic["artifact"]
-	_, hasFinal := generic["final"]
-	_, hasID := generic["id"]
-
 	switch {
-	case hasArtifact:
-		var ev types.TaskArtifactUpdateEvent
-		if err := json.Unmarshal(eventJSON, &ev); err != nil {
-			return
-		}
+	case event.ArtifactUpdate != nil:
+		ev := event.ArtifactUpdate
 		if ev.TaskID != "" {
 			m.lastTaskID = ev.TaskID
 		}
 		if text := partsToText(ev.Artifact.Parts); text != "" {
 			m.appendAgentText(text)
 		}
-	case hasFinal:
-		var ev types.TaskStatusUpdateEvent
-		if err := json.Unmarshal(eventJSON, &ev); err != nil {
-			return
-		}
+	case event.StatusUpdate != nil:
+		ev := event.StatusUpdate
 		if ev.TaskID != "" {
 			m.lastTaskID = ev.TaskID
 		}
@@ -469,11 +459,8 @@ func (m *interactiveModel) applyStreamEvent(resp types.JSONRPCSuccessResponse) {
 				m.appendAgentText(text)
 			}
 		}
-	case hasID:
-		var task types.Task
-		if err := json.Unmarshal(eventJSON, &task); err != nil {
-			return
-		}
+	case event.Task != nil:
+		task := event.Task
 		if task.ID != "" {
 			m.lastTaskID = task.ID
 		}
@@ -482,6 +469,10 @@ func (m *interactiveModel) applyStreamEvent(resp types.JSONRPCSuccessResponse) {
 			if text := partsToText(task.Status.Message.Parts); text != "" {
 				m.appendAgentText(text)
 			}
+		}
+	case event.Message != nil:
+		if text := partsToText(event.Message.Parts); text != "" {
+			m.appendAgentText(text)
 		}
 	}
 }
@@ -665,11 +656,11 @@ func (m interactiveModel) View() string {
 
 // --- commands ---
 
-func startStreamCmd(params types.MessageSendParams) bubbletea.Cmd {
+func startStreamCmd(params types.SendMessageRequest) bubbletea.Cmd {
 	return func() bubbletea.Msg {
 		ch, err := a2aClient.SendTaskStreaming(context.Background(), params)
 		if err != nil {
-			return agentErrorMsg{err: handleA2AError(err, "message/stream")}
+			return agentErrorMsg{err: handleA2AError(err, types.A2AMethodSendStreamingMessage)}
 		}
 		return streamStartedMsg{ch: ch}
 	}
@@ -682,35 +673,35 @@ func readStreamCmd(ch <-chan types.JSONRPCSuccessResponse) bubbletea.Cmd {
 	}
 }
 
-func submitBackgroundCmd(params types.MessageSendParams) bubbletea.Cmd {
+func submitBackgroundCmd(params types.SendMessageRequest) bubbletea.Cmd {
 	return func() bubbletea.Msg {
 		resp, err := a2aClient.SendTask(context.Background(), params)
 		if err != nil {
-			return agentErrorMsg{err: handleA2AError(err, "message/send")}
+			return agentErrorMsg{err: handleA2AError(err, types.A2AMethodSendMessage)}
 		}
 		task, err := taskFromResult(resp.Result)
 		if err != nil {
 			return agentErrorMsg{err: err}
 		}
-		return taskSubmittedMsg{taskID: task.ID, contextID: task.ContextID}
+		return taskSubmittedMsg{taskID: task.ID, contextID: task.GetContextID()}
 	}
 }
 
 func listTasksForChatCmd(contextID string, all bool, limit int) bubbletea.Cmd {
 	return func() bubbletea.Msg {
-		params := types.TaskListParams{Limit: limit}
+		params := types.ListTasksRequest{PageSize: &limit}
 		if !all {
 			params.ContextID = &contextID
 		}
 		resp, err := a2aClient.ListTasks(context.Background(), params)
 		if err != nil {
-			return tasksListedMsg{err: handleA2AError(err, "tasks/list"), all: all}
+			return tasksListedMsg{err: handleA2AError(err, types.A2AMethodListTasks), all: all}
 		}
 		b, err := json.Marshal(resp.Result)
 		if err != nil {
 			return tasksListedMsg{err: fmt.Errorf("failed to marshal task list: %w", err), all: all}
 		}
-		var list types.TaskList
+		var list types.ListTasksResponse
 		if err := json.Unmarshal(b, &list); err != nil {
 			return tasksListedMsg{err: fmt.Errorf("failed to unmarshal task list: %w", err), all: all}
 		}
@@ -720,9 +711,9 @@ func listTasksForChatCmd(contextID string, all bool, limit int) bubbletea.Cmd {
 
 func pollTaskCmd(taskID string) bubbletea.Cmd {
 	return bubbletea.Tick(backgroundPollInterval, func(time.Time) bubbletea.Msg {
-		resp, err := a2aClient.GetTask(context.Background(), types.TaskQueryParams{ID: taskID})
+		resp, err := a2aClient.GetTask(context.Background(), types.GetTaskRequest{ID: taskID})
 		if err != nil {
-			return agentErrorMsg{err: handleA2AError(err, "tasks/get")}
+			return agentErrorMsg{err: handleA2AError(err, types.A2AMethodGetTask)}
 		}
 		task, err := taskFromResult(resp.Result)
 		if err != nil {
@@ -740,6 +731,11 @@ func taskFromResult(result any) (types.Task, error) {
 	if err != nil {
 		return task, fmt.Errorf("failed to marshal task result: %w", err)
 	}
+	// SendMessage wraps the task in a SendMessageResponse; GetTask returns it bare.
+	var sent types.SendMessageResponse
+	if err := json.Unmarshal(b, &sent); err == nil && sent.Task != nil {
+		return *sent.Task, nil
+	}
 	if err := json.Unmarshal(b, &task); err != nil {
 		return task, fmt.Errorf("failed to unmarshal task: %w", err)
 	}
@@ -750,7 +746,7 @@ func isTerminalState(state types.TaskState) bool {
 	switch state {
 	case types.TaskStateCompleted,
 		types.TaskStateFailed,
-		types.TaskStateCancelled,
+		types.TaskStateCanceled,
 		types.TaskStateRejected,
 		types.TaskStateInputRequired:
 		return true
@@ -784,6 +780,15 @@ func humanState(s types.TaskState) string {
 	return strings.ToLower(strings.TrimPrefix(string(s), "TASK_STATE_"))
 }
 
+// messageLabel names the sender of a status message, so a task snapshot that
+// still carries the user's own prompt isn't printed as the agent's response.
+func messageLabel(role types.Role) string {
+	if role == types.RoleUser {
+		return "User Message"
+	}
+	return "Agent Response"
+}
+
 func shortID(id string) string {
 	if len(id) <= 8 {
 		return id
@@ -810,7 +815,7 @@ func runInteractiveChat(mode chatMode, contextID string) error {
 	serverURL := viper.GetString("server-url")
 	model := newInteractiveModel(mode, serverURL, agentName, contextID)
 	if cardErr != nil {
-		model.addLine(senderSystem, "⚠ failed to reach agent: "+handleA2AError(cardErr, "agent/card").Error())
+		model.addLine(senderSystem, "⚠ failed to reach agent: "+handleA2AError(cardErr, agentCardMethod).Error())
 	} else {
 		model.addLine(senderSystem, fmt.Sprintf("connected to %s · %s mode · context %s", serverURL, mode.String(), shortID(model.contextID)))
 	}

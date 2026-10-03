@@ -28,21 +28,22 @@ func hasSystemLine(m interactiveModel, substr string) bool {
 	return false
 }
 
-func statusEventResp(text string, state types.TaskState, final bool) types.JSONRPCSuccessResponse {
-	status := map[string]any{"state": string(state)}
+func statusEventResp(text string, state types.TaskState) types.JSONRPCSuccessResponse {
+	status := types.TaskStatus{State: state}
 	if text != "" {
-		status["message"] = map[string]any{
-			"messageId": "m-agent",
-			"role":      string(types.RoleAgent),
-			"parts":     []map[string]any{{"text": text}},
+		status.Message = &types.Message{
+			MessageID: "m-agent",
+			Role:      types.RoleAgent,
+			Parts:     []types.Part{{Text: &text}},
 		}
 	}
 	return types.JSONRPCSuccessResponse{
-		Result: map[string]any{
-			"taskId":    "task-1",
-			"contextId": "ctx-1",
-			"final":     final,
-			"status":    status,
+		Result: types.StreamResponse{
+			StatusUpdate: &types.TaskStatusUpdateEvent{
+				TaskID:    "task-1",
+				ContextID: "ctx-1",
+				Status:    status,
+			},
 		},
 	}
 }
@@ -75,9 +76,9 @@ func TestInteractiveStreamingAccumulatesText(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "url", "Agent", "ctx-1")
 	m.waiting = true
 
-	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("Hello ", types.TaskStateWorking, false)})
+	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("Hello ", types.TaskStateWorking)})
 	m = updated.(interactiveModel)
-	updated, _ = m.Update(streamEventMsg{ok: true, resp: statusEventResp("world", types.TaskStateCompleted, true)})
+	updated, _ = m.Update(streamEventMsg{ok: true, resp: statusEventResp("world", types.TaskStateCompleted)})
 	m = updated.(interactiveModel)
 	updated, _ = m.Update(streamEventMsg{ok: false})
 	m = updated.(interactiveModel)
@@ -110,7 +111,7 @@ func TestInteractiveStreamingInputRequiredPrompt(t *testing.T) {
 	m := newInteractiveModel(modeStreaming, "url", "Agent", "ctx-1")
 	m.waiting = true
 
-	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("need more info", types.TaskStateInputRequired, true)})
+	updated, _ := m.Update(streamEventMsg{ok: true, resp: statusEventResp("need more info", types.TaskStateInputRequired)})
 	m = updated.(interactiveModel)
 	updated, _ = m.Update(streamEventMsg{ok: false})
 	m = updated.(interactiveModel)
@@ -279,12 +280,12 @@ func TestStartStreamCmd(t *testing.T) {
 	ch := make(chan types.JSONRPCSuccessResponse)
 	close(ch)
 	a2aClient = &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
+		sendTaskStreamingFunc: func(ctx context.Context, params types.SendMessageRequest) (<-chan types.JSONRPCSuccessResponse, error) {
 			return ch, nil
 		},
 	}
 
-	msg := startStreamCmd(types.MessageSendParams{})()
+	msg := startStreamCmd(types.SendMessageRequest{})()
 	if _, ok := msg.(streamStartedMsg); !ok {
 		t.Fatalf("expected streamStartedMsg, got %T", msg)
 	}
@@ -295,12 +296,12 @@ func TestStartStreamCmdMethodNotFound(t *testing.T) {
 	defer func() { a2aClient = originalClient }()
 
 	a2aClient = &mockA2AClient{
-		sendTaskStreamingFunc: func(ctx context.Context, params types.MessageSendParams) (<-chan types.JSONRPCSuccessResponse, error) {
+		sendTaskStreamingFunc: func(ctx context.Context, params types.SendMessageRequest) (<-chan types.JSONRPCSuccessResponse, error) {
 			return nil, &mockError{msg: "MethodNotFoundError: -32601"}
 		},
 	}
 
-	msg := startStreamCmd(types.MessageSendParams{})()
+	msg := startStreamCmd(types.SendMessageRequest{})()
 	errMsg, ok := msg.(agentErrorMsg)
 	if !ok {
 		t.Fatalf("expected agentErrorMsg, got %T", msg)
@@ -315,18 +316,21 @@ func TestSubmitBackgroundCmd(t *testing.T) {
 	defer func() { a2aClient = originalClient }()
 
 	a2aClient = &mockA2AClient{
-		sendTaskFunc: func(ctx context.Context, params types.MessageSendParams) (*types.JSONRPCSuccessResponse, error) {
+		sendTaskFunc: func(ctx context.Context, params types.SendMessageRequest) (*types.JSONRPCSuccessResponse, error) {
+			contextID := "ctx-bg"
 			return &types.JSONRPCSuccessResponse{
-				Result: map[string]any{
-					"id":        "task-bg",
-					"contextId": "ctx-bg",
-					"status":    map[string]any{"state": string(types.TaskStateSubmitted)},
+				Result: types.SendMessageResponse{
+					Task: &types.Task{
+						ID:        "task-bg",
+						ContextID: &contextID,
+						Status:    types.TaskStatus{State: types.TaskStateSubmitted},
+					},
 				},
 			}, nil
 		},
 	}
 
-	msg := submitBackgroundCmd(types.MessageSendParams{})()
+	msg := submitBackgroundCmd(types.SendMessageRequest{})()
 	sub, ok := msg.(taskSubmittedMsg)
 	if !ok {
 		t.Fatalf("expected taskSubmittedMsg, got %T", msg)
@@ -343,7 +347,7 @@ func TestIsTerminalState(t *testing.T) {
 	terminal := []types.TaskState{
 		types.TaskStateCompleted,
 		types.TaskStateFailed,
-		types.TaskStateCancelled,
+		types.TaskStateCanceled,
 		types.TaskStateRejected,
 		types.TaskStateInputRequired,
 	}
