@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.10.0...v0.11.0) (2026-10-03)
+
+### ✨ Features
+
+* **auth:** add auth command and credential flags ([#114](https://github.com/inference-gateway/a2a-debugger/issues/114)) ([b40e02a](https://github.com/inference-gateway/a2a-debugger/commit/b40e02a7be4d7aecf968160072e8b52fde6a0814))
+
+### ♻️ Improvements
+
+* adopt A2A v1.0.1 method names via adk v0.31.0 ([#133](https://github.com/inference-gateway/a2a-debugger/issues/133)) ([18f5323](https://github.com/inference-gateway/a2a-debugger/commit/18f5323f821ab34efa96cecea57e5a2b23f5c549))
+
+### 👷 CI
+
+* **claude:** centralize claude.yml via reusable workflow ([#123](https://github.com/inference-gateway/a2a-debugger/issues/123)) ([c64f10f](https://github.com/inference-gateway/a2a-debugger/commit/c64f10f392f7f44baed0d9d5752a0bdd4ffacca0))
+* **claude:** centralize claude.yml via reusable workflow ([#126](https://github.com/inference-gateway/a2a-debugger/issues/126)) ([d2c0b71](https://github.com/inference-gateway/a2a-debugger/commit/d2c0b71a4d73c75eda5a47be7fa7e9846b55fdbb))
+
+### 📚 Documentation
+
+* **agents:** refresh AGENTS.md for current code layout ([#118](https://github.com/inference-gateway/a2a-debugger/issues/118)) ([efee952](https://github.com/inference-gateway/a2a-debugger/commit/efee9520c6194228f15b15fc526b52193de66a8b))
+
+### 🔧 Miscellaneous
+
+* **deps:** bump claude-code 2.1.245 -> 2.1.266 ([#112](https://github.com/inference-gateway/a2a-debugger/issues/112)) ([2c185f0](https://github.com/inference-gateway/a2a-debugger/commit/2c185f0d4203ec92b1cd0210a29d0a3fdc28c037))
+* **deps:** bump claude-code 2.1.266 -> 2.1.278 ([#121](https://github.com/inference-gateway/a2a-debugger/issues/121)) ([8a66dea](https://github.com/inference-gateway/a2a-debugger/commit/8a66dea27a530601b18d08e0379eddd00c3149a9))
+* **deps:** bump claude-code 2.1.278 -> 2.1.280 ([#124](https://github.com/inference-gateway/a2a-debugger/issues/124)) ([de903b9](https://github.com/inference-gateway/a2a-debugger/commit/de903b987fe3ad80e41a6b7c632da6e7025a03c6))
+* **deps:** bump claude-code 2.1.280 -> 2.1.283 ([#127](https://github.com/inference-gateway/a2a-debugger/issues/127)) ([9fc5ace](https://github.com/inference-gateway/a2a-debugger/commit/9fc5ace402fd218624872594868a4725baa0c7f3))
+* **deps:** bump claude-code 2.1.283 -> 2.1.285 ([#131](https://github.com/inference-gateway/a2a-debugger/issues/131)) ([b2b57c2](https://github.com/inference-gateway/a2a-debugger/commit/b2b57c2759f8a7e0b72cedecd4f4af61163f22a7))
+* **deps:** bump infer CLI v0.183.0 -> v0.192.0 ([#113](https://github.com/inference-gateway/a2a-debugger/issues/113)) ([58338f7](https://github.com/inference-gateway/a2a-debugger/commit/58338f73fe4679a2474b1e3ce49fffa39a1672bf))
+* **deps:** bump infer CLI v0.192.0 -> v0.205.3 ([#122](https://github.com/inference-gateway/a2a-debugger/issues/122)) ([dcc41b7](https://github.com/inference-gateway/a2a-debugger/commit/dcc41b7ba209a4cdc1a8efad95b92b39f5ccb1a2))
+* **deps:** bump infer CLI v0.205.3 -> v0.208.0 ([#125](https://github.com/inference-gateway/a2a-debugger/issues/125)) ([921b772](https://github.com/inference-gateway/a2a-debugger/commit/921b772a2f4e844f71ec795312114447b24b4952))
+* **deps:** bump infer CLI v0.208.0 -> v0.218.0 ([#128](https://github.com/inference-gateway/a2a-debugger/issues/128)) ([b1dbfed](https://github.com/inference-gateway/a2a-debugger/commit/b1dbfedf5033e10c2bf555f13762367c23fb15a4))
+* **deps:** bump infer CLI v0.218.0 -> v0.221.1 ([#130](https://github.com/inference-gateway/a2a-debugger/issues/130)) ([775c18c](https://github.com/inference-gateway/a2a-debugger/commit/775c18c457ff916fabd4f0455dac5085ef0edf84))
+* **lint:** enforce Go import grouping and named imports with gci and importas ([#117](https://github.com/inference-gateway/a2a-debugger/issues/117)) ([ca24b08](https://github.com/inference-gateway/a2a-debugger/commit/ca24b08ff8e972dd7222c02cf42e933f40ac8050)), closes [#116](https://github.com/inference-gateway/a2a-debugger/issues/116)
+
+### 🔨 Miscellaneous
+
+* **deps:** bump docker/setup-buildx-action in the github-actions group ([#120](https://github.com/inference-gateway/a2a-debugger/issues/120)) ([2c42a52](https://github.com/inference-gateway/a2a-debugger/commit/2c42a528759e0934cb6d3fbdc3367fdf7f7bdd8a))
+* **deps:** bump github.com/inference-gateway/adk in the gomod group ([#115](https://github.com/inference-gateway/a2a-debugger/issues/115)) ([479f614](https://github.com/inference-gateway/a2a-debugger/commit/479f61404b227dabc5e832f837bfced705c41db9))
+* **deps:** bump github.com/inference-gateway/adk in the gomod group ([#119](https://github.com/inference-gateway/a2a-debugger/issues/119)) ([e8bf20c](https://github.com/inference-gateway/a2a-debugger/commit/e8bf20cb486bc2c70831a0eadcb1bc7fc72fbc70))
+* **deps:** bump github.com/inference-gateway/adk in the gomod group ([#129](https://github.com/inference-gateway/a2a-debugger/issues/129)) ([d1b7019](https://github.com/inference-gateway/a2a-debugger/commit/d1b70198943acbf9ebd6464b8b17d1dad69f68be))
+
 ## [0.10.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.9.0...v0.10.0) (2026-09-03)
 
 ### ✨ Features
