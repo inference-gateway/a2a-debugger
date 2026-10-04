@@ -102,8 +102,9 @@ install_binary() {
     local temp_archive="${temp_dir}/${archive_name}"
     
     if command -v curl >/dev/null 2>&1; then
-        if ! curl -L -o "$temp_archive" "$download_url"; then
-            print_error "Failed to download archive from ${download_url}"
+        local http_code=""
+        if ! http_code=$(curl -fL -o "$temp_archive" -w "%{http_code}" "$download_url"); then
+            print_error "Failed to download archive (HTTP ${http_code:-000}) from ${download_url}"
             rm -rf "$temp_dir"
             exit 1
         fi
