@@ -66,6 +66,12 @@ chmod +x install.sh
 go install github.com/inference-gateway/a2a-debugger@latest
 ```
 
+This installs the binary as `a2a-debugger`. Every example below uses `a2a`, so rename it or add an alias:
+
+```bash
+mv "$(go env GOPATH)/bin/a2a-debugger" "$(go env GOPATH)/bin/a2a"
+```
+
 ### From Release
 
 Download the latest binary from the [releases page](https://github.com/inference-gateway/a2a-debugger/releases).
@@ -601,13 +607,13 @@ Note that `tasks list` strips artifacts and history unless `--include-artifacts`
 
 ### Prerequisites
 
-- Go 1.26 or later
+- Go 1.26.8 or later (the version pinned in `go.mod`)
 - [Task](https://taskfile.dev/) for build automation
 
 ### Available Tasks
 
 ```bash
-task generate    # Generate code from schemas
+task tidy       # Run go mod tidy for every module
 task lint       # Run linting
 task build      # Build the application
 task test       # Run tests
@@ -617,7 +623,7 @@ task clean      # Clean build artifacts
 ### Development Workflow
 
 1. Make your changes
-2. Run `task generate` to update generated files
+2. Run `task tidy` to keep `go.mod` clean (CI fails on a dirty `go.mod`)
 3. Run `task lint` to check code quality
 4. Run `task build` to verify compilation
 5. Run `task test` to ensure all tests pass
