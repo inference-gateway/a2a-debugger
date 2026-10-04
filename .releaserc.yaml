@@ -51,7 +51,13 @@ plugins:
 
   - - "@semantic-release/github"
     - assets:
-        - CHANGELOG.md
+        - path: CHANGELOG.md
+        - path: dist/a2a_Linux_x86_64.tar.gz
+        - path: dist/a2a_Linux_arm64.tar.gz
+        - path: dist/a2a_Linux_armv7.tar.gz
+        - path: dist/a2a_Darwin_x86_64.tar.gz
+        - path: dist/a2a_Darwin_arm64.tar.gz
+        - path: dist/checksums.txt
       releasedLabels:
         - released
       releaseNameTemplate: "🚀 Version ${nextRelease.version}"
