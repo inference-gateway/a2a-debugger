@@ -43,6 +43,18 @@ Tests live in `cli/*_test.go` (`cli_test.go`, `auth_test.go`, `cli_output_test.g
 - **Config is `~/.a2a.yaml`**, loaded by viper; `viper.AutomaticEnv()` means `SERVER_URL=...` overrides `server-url`.
 - **Security:** never commit local config, credentials, or private server URLs. Use `--insecure` only for local or test servers.
 
+## Code Readability
+
+- Write self-explanatory code: clear names and small, single-purpose functions carry the intent.
+  If a block needs a comment to be understood, extract it into a well-named function or variable.
+- No inline comments inside function bodies.
+- Doc comments on functions and types are at most 5 lines: what it does and why, not how.
+- No comments above modules, packages, or files.
+- Tool directives are not comments and stay where the tool needs them (lint suppressions, build
+  tags, compiler pragmas, code generation markers).
+- No semicolons in documentation prose (Markdown files, doc comments): split the sentence or use
+  a dash instead.
+
 ## Release
 
 Manual: trigger `.github/workflows/release.yml` (workflow_dispatch). It runs semantic-release against `main` (or `rc/*`) to tag and create the GitHub release; that event fires `artifacts.yml`, where goreleaser builds linux/darwin × amd64/arm/arm64 binaries, pushes multi-arch Docker images to `ghcr.io/inference-gateway/a2a-debugger`, and cosign-signs. `release: disable: true` in `.goreleaser.yaml` is intentional — semantic-release owns the release.
