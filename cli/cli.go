@@ -123,6 +123,7 @@ func initConfig() {
 		viper.SetConfigName(".a2a")
 	}
 
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
