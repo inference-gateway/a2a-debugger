@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.1](https://github.com/inference-gateway/a2a-debugger/compare/v0.11.0...v0.11.1) (2026-10-04)
+
+### 👷 CI
+
+* **release:** attach release assets before publish for immutable releases ([#141](https://github.com/inference-gateway/a2a-debugger/issues/141)) ([86d7f66](https://github.com/inference-gateway/a2a-debugger/commit/86d7f66bb8c512896da819421260eacb99ad197f))
+
+### 📚 Documentation
+
+* **agents:** add code readability guidelines ([#139](https://github.com/inference-gateway/a2a-debugger/issues/139)) ([cd392a1](https://github.com/inference-gateway/a2a-debugger/commit/cd392a16ac00c82c558a9583140fa270053a1823))
+
 ## [0.11.0](https://github.com/inference-gateway/a2a-debugger/compare/v0.10.0...v0.11.0) (2026-10-03)
 
 ### ✨ Features
