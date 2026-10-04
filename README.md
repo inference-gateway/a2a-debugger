@@ -179,15 +179,27 @@ auth-header: Authorization
 
 #### Task List Options
 
-- `--state`: Filter by task state (submitted, working, completed, failed)
+- `--state`: Filter by task state. Accepts any A2A v1.0.1 state in friendly form (`submitted`, `working`, `input-required`, `auth-required`, `completed`, `canceled`, `failed`, `rejected`) or as the enum value (`TASK_STATE_WORKING`). Anything else fails with `invalid --state`
 - `--context-id`: Filter by context ID
 - `--limit`: Maximum number of tasks to return (default: 50)
 - `--offset`: Number of tasks to skip (default: 0)
 - `--include-history`: Include conversation history in the output (default: false)
+- `--include-artifacts`: Include artifacts in the output (default: false, artifacts are dropped from every task otherwise)
 
 #### Task Get Options
 
 - `--history-length`: Number of history messages to include
+
+#### Task Submit Options
+
+Apply to both `tasks submit` and `tasks submit-streaming`:
+
+- `--context-id`: Context ID for the task (a new context is generated if not provided)
+- `--task-id`: Task ID to resume an existing task
+
+`tasks submit-streaming` additionally accepts:
+
+- `--raw`: Print the raw streaming events instead of formatted output (default: false)
 
 #### Interactive Mode Options
 
@@ -200,9 +212,12 @@ Per the A2A spec the credential is obtained out of band; the debugger only trans
 The public agent card is always unauthenticated, every other request carries the token in
 the header named by `--auth-header` (for `Authorization` the value is prefixed with `Bearer `).
 
-`a2a auth <token>` verifies a credential by sending one authenticated request (`ListTasks`):
-a `401` means the server rejected it, anything else means it was accepted. When the public card
-advertises `supportsExtendedAgentCard`, the authenticated extended card is fetched and printed too.
+`a2a auth <token>` verifies a credential by sending one authenticated request (`ListTasks`).
+The credential counts as accepted when the probe succeeds or comes back as a JSON-RPC error
+(authentication happens before dispatch, so even "method not found" proves the request got
+through). Any other failure - a `401`, a `403`, an HTTP error without a JSON-RPC body, or a
+network error - makes `a2a auth` exit with that error. When the public card advertises
+`capabilities.extendedAgentCard`, the authenticated extended card is fetched and printed too.
 
 ```bash
 # Get a token from your identity provider (Keycloak, client credentials grant)
@@ -344,7 +359,7 @@ $ a2a interactive --server-url http://localhost:8080
 ```
 
 ```text
- A2A Chat  http://localhost:8080 · streaming · context 1a2b3c4d
+ A2A Chat  http://localhost:8080 · streaming · session 1a2b3c4d
 
 You
   What's the weather like today?
@@ -354,8 +369,11 @@ My A2A Agent
 
 ready
 > ▏
-enter: send · ctrl+t: toggle mode · ctrl+c: quit
+enter: send · /tasks: list · ctrl+t: toggle mode · ctrl+l: clear · ctrl+c: quit
 ```
+
+Once more than one session exists the header shows the active one with a count, for example
+`session 1a2b3c4d [2 sessions]`.
 
 Use **background** mode for long-running tasks. Each message is submitted as a task and polled
 until it reaches a terminal state:
@@ -366,13 +384,23 @@ $ a2a interactive --background
 
 Key bindings:
 
-- `Enter` — send the current message
-- `Ctrl+T` — toggle between streaming and background mode mid-session
-- `Ctrl+C` / `Esc` — quit
+- `Enter` - send the current message
+- `Ctrl+T` - toggle between streaming and background mode mid-session
+- `Ctrl+L` - clear the transcript
+- `Ctrl+C` / `Esc` - quit
 
-The session keeps a single context ID so the whole conversation is threaded. When the agent
-responds with `input-required`, your next message automatically continues the same task. You can
-also resume a previous conversation with `--context-id <id>`.
+Slash commands:
+
+- `/tasks [all]` - list the tasks of the active session, or of every context with `all`
+- `/sessions` - list the open sessions and mark the active one
+- `/session <id>` - switch to another session (the short id shown by `/sessions` is enough)
+- `/new` - start a new session with a fresh context ID
+- `/help` - list the available commands
+
+Each session keeps a single context ID so the whole conversation is threaded. When the agent
+responds with `input-required`, your next message automatically continues the same task. `/new`
+starts another context and `/session <id>` switches between them. You can also resume a previous
+conversation with `--context-id <id>`.
 
 #### Output Formats
 

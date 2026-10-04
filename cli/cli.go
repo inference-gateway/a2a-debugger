@@ -95,7 +95,7 @@ func init() {
 	rootCmd.AddCommand(interactiveCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	listTasksCmd.Flags().String("state", "", "Filter by task state (submitted, working, completed, failed)")
+	listTasksCmd.Flags().String("state", "", "Filter by task state (submitted, working, input-required, auth-required, completed, canceled, failed, rejected, or a TASK_STATE_* enum value)")
 	listTasksCmd.Flags().String("context-id", "", "Filter by context ID")
 	listTasksCmd.Flags().Int("limit", 50, "Maximum number of tasks to return")
 	listTasksCmd.Flags().Int("offset", 0, "Number of tasks to skip")
@@ -375,7 +375,7 @@ var authCmd = &cobra.Command{
 	Use:   "auth [token]",
 	Short: "Verify a credential against the A2A server",
 	Long: `Verifies a credential by sending one authenticated request (ListTasks) and,
-when the public card advertises supportsExtendedAgentCard, fetching the authenticated
+when the public card advertises capabilities.extendedAgentCard, fetching the authenticated
 extended agent card as well.
 
 The token is obtained out of band (for example from your identity provider) and is
