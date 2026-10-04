@@ -258,11 +258,13 @@ server-url = http://localhost:8080
 # List all configuration
 $ a2a config list
 
-📋 Configuration:
-
-  server-url = http://localhost:8080
-  timeout = 30s
-  debug = false
+auth-header: Authorization
+debug: false
+insecure: false
+output: yaml
+server-url: http://localhost:8080
+timeout: 30s
+token: ""
 ```
 
 #### Connect and view agent information
@@ -270,38 +272,66 @@ $ a2a config list
 ```bash
 $ a2a connect --server-url http://localhost:8080
 
-✅ Successfully connected to A2A server!
-
-Agent Information:
-  Name: My A2A Agent
-  Description: A helpful assistant agent
-  Version: 1.0.0
-  URL: http://localhost:8080
-
-Capabilities:
-  Streaming: true
-  Push Notifications: false
-  State Transition History: true
+agent:
+    capabilities:
+        extendedagentcard: null
+        extensions: []
+        pushnotifications: false
+        streaming: true
+    defaultinputmodes:
+        - text/plain
+    defaultoutputmodes:
+        - text/plain
+    description: echo agent for the debugger end-to-end test
+    documentationurl: null
+    iconurl: null
+    name: e2e-agent
+    provider: null
+    securityrequirements: []
+    securityschemes: {}
+    signatures: []
+    skills: []
+    supportedinterfaces:
+        - protocolbinding: JSONRPC
+          protocolversion: "1.0"
+          tenant: null
+          url: http://localhost:8080
+    version: 0.0.0
+connected: true
 ```
 
 #### List tasks with filtering
 
 ```bash
-$ a2a tasks list --state working --limit 5
+$ a2a tasks list --state completed --limit 5
 
-📋 Tasks (Total: 23, Showing: 5)
-
-1. Task ID: task-abc123
-   Context ID: ctx-xyz789
-   Status: working
-   Message ID: msg-456
-   Role: assistant
-
-2. Task ID: task-def456
-   Context ID: ctx-uvw123
-   Status: working
-   Message ID: msg-789
-   Role: user
+showing: 1
+tasks:
+    - artifacts: []
+      contextid: demo-ctx
+      history: []
+      id: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+      metadata: null
+      status:
+        message:
+            contextid: demo-ctx
+            extensions: []
+            messageid: 06e1a21c-0af7-4edd-9de8-b6f369aa820c
+            metadata: null
+            parts:
+                - data: null
+                  filename: null
+                  mediatype: null
+                  metadata: null
+                  raw: null
+                  text: 'Echo: I need help with my project'
+                  url: null
+            referencetaskids: []
+            role: ROLE_AGENT
+            taskid: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+        state: TASK_STATE_COMPLETED
+        timestamp: 2026-10-04T15:01:41.256127955Z
+total: 1
 ```
 
 #### Include conversation history in task list
@@ -319,34 +349,128 @@ $ a2a tasks list --limit 1 --include-history
 #### View detailed task information
 
 ```bash
-$ a2a tasks get task-abc123
+$ a2a tasks get a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
 
-� Task Details
-
-ID: task-abc123
-Context ID: ctx-xyz789
-Status: completed
-
-Current Message:
-  Message ID: msg-456
-  Role: assistant
-  Parts: 1
-    1. Kind: text
-       Text: Hello! How can I help you today?
+artifacts: []
+contextid: demo-ctx
+history:
+    - contextid: demo-ctx
+      extensions: []
+      messageid: msg-1791126101
+      metadata: null
+      parts:
+        - data: null
+          filename: null
+          mediatype: null
+          metadata: null
+          raw: null
+          text: I need help with my project
+          url: null
+      referencetaskids: []
+      role: ROLE_USER
+      taskid: null
+    - contextid: demo-ctx
+      extensions: []
+      messageid: 06e1a21c-0af7-4edd-9de8-b6f369aa820c
+      metadata: null
+      parts:
+        - data: null
+          filename: null
+          mediatype: null
+          metadata: null
+          raw: null
+          text: 'Echo: I need help with my project'
+          url: null
+      referencetaskids: []
+      role: ROLE_AGENT
+      taskid: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+id: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+metadata: null
+status:
+    message:
+        contextid: demo-ctx
+        extensions: []
+        messageid: 06e1a21c-0af7-4edd-9de8-b6f369aa820c
+        metadata: null
+        parts:
+            - data: null
+              filename: null
+              mediatype: null
+              metadata: null
+              raw: null
+              text: 'Echo: I need help with my project'
+              url: null
+        referencetaskids: []
+        role: ROLE_AGENT
+        taskid: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+    state: TASK_STATE_COMPLETED
+    timestamp: 2026-10-04T15:01:41.256127955Z
 ```
 
 #### View conversation history
 
+Unlike `tasks list`, `tasks history` always returns the full task objects including their
+conversation history:
+
 ```bash
-$ a2a tasks history ctx-xyz789
+$ a2a tasks history demo-ctx
 
-💬 Conversation History for Context: ctx-xyz789
-
-Task: task-abc123 (Status: completed)
-  1. [user] msg-123
-     1: I need help with my project
-  2. [assistant] msg-456
-     1: Hello! How can I help you today?
+context_id: demo-ctx
+tasks:
+    - artifacts: []
+      contextid: demo-ctx
+      history:
+        - contextid: demo-ctx
+          extensions: []
+          messageid: msg-1791126101
+          metadata: null
+          parts:
+            - data: null
+              filename: null
+              mediatype: null
+              metadata: null
+              raw: null
+              text: I need help with my project
+              url: null
+          referencetaskids: []
+          role: ROLE_USER
+          taskid: null
+        - contextid: demo-ctx
+          extensions: []
+          messageid: 06e1a21c-0af7-4edd-9de8-b6f369aa820c
+          metadata: null
+          parts:
+            - data: null
+              filename: null
+              mediatype: null
+              metadata: null
+              raw: null
+              text: 'Echo: I need help with my project'
+              url: null
+          referencetaskids: []
+          role: ROLE_AGENT
+          taskid: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+      id: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+      metadata: null
+      status:
+        message:
+            contextid: demo-ctx
+            extensions: []
+            messageid: 06e1a21c-0af7-4edd-9de8-b6f369aa820c
+            metadata: null
+            parts:
+                - data: null
+                  filename: null
+                  mediatype: null
+                  metadata: null
+                  raw: null
+                  text: 'Echo: I need help with my project'
+                  url: null
+            referencetaskids: []
+            role: ROLE_AGENT
+            taskid: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+        state: TASK_STATE_COMPLETED
+        timestamp: 2026-10-04T15:01:41.256127955Z
 ```
 
 #### Interactive chat mode
@@ -404,58 +528,74 @@ conversation with `--context-id <id>`.
 
 #### Output Formats
 
-By default, all commands output structured data in YAML format. You can switch to JSON using the `-o` flag:
+By default, all commands output structured data in YAML format. You can switch to JSON using the `-o` flag.
+
+JSON carries the A2A v1.0.1 field names (`contextId`, `messageId`) and omits unset fields. YAML is
+produced from the same Go structs, which carry no YAML tags, so keys are lowercased Go field names
+(`contextid`, `messageid`) and unset fields appear as `null`:
 
 ```bash
 # YAML output (default)
 $ a2a tasks list --limit 2
+showing: 1
 tasks:
-  - id: task-abc123
-    context_id: ctx-xyz789
-    kind: task
-    status:
-      state: completed
-      message:
-        message_id: msg-456
-        role: assistant
-    artifacts: []
-    metadata: {}
-  - id: task-def456
-    context_id: ctx-uvw123
-    kind: task
-    status:
-      state: working
-      message:
-        message_id: msg-789
-        role: user
-    artifacts: []
-    metadata: {}
-total: 23
-showing: 2
+    - artifacts: []
+      contextid: demo-ctx
+      history: []
+      id: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+      metadata: null
+      status:
+        message:
+            contextid: demo-ctx
+            extensions: []
+            messageid: 06e1a21c-0af7-4edd-9de8-b6f369aa820c
+            metadata: null
+            parts:
+                - data: null
+                  filename: null
+                  mediatype: null
+                  metadata: null
+                  raw: null
+                  text: 'Echo: I need help with my project'
+                  url: null
+            referencetaskids: []
+            role: ROLE_AGENT
+            taskid: a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a
+        state: TASK_STATE_COMPLETED
+        timestamp: 2026-10-04T15:01:41.256127955Z
+total: 1
 
 # JSON output
 $ a2a tasks list --limit 2 -o json
 {
+  "showing": 1,
   "tasks": [
     {
-      "id": "task-abc123",
-      "context_id": "ctx-xyz789",
-      "kind": "task",
+      "contextId": "demo-ctx",
+      "id": "a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a",
       "status": {
-        "state": "completed",
         "message": {
-          "message_id": "msg-456",
-          "role": "assistant"
-        }
-      },
-      "artifacts": [],
-      "metadata": {}
+          "contextId": "demo-ctx",
+          "messageId": "06e1a21c-0af7-4edd-9de8-b6f369aa820c",
+          "parts": [
+            {
+              "text": "Echo: I need help with my project"
+            }
+          ],
+          "role": "ROLE_AGENT",
+          "taskId": "a7fb8748-bd60-4f13-bb28-9dd43e2ecb3a"
+        },
+        "state": "TASK_STATE_COMPLETED",
+        "timestamp": "2026-10-04T15:01:41.256127955Z"
+      }
     }
   ],
-  "total": 23,
-  "showing": 2
+  "total": 1
 }
 ```
+
+Note that `tasks list` strips artifacts and history unless `--include-artifacts` /
+`--include-history` is passed.
 
 ## 🛠️ Development
 

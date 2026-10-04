@@ -41,7 +41,7 @@ docker compose run --rm a2a-debugger tasks submit-streaming "Hello, can you demo
 docker compose run --rm a2a-debugger connect
 
 # Get detailed agent card information in JSON format
-docker compose run --rm a2a-debugger agent-card
+docker compose run --rm a2a-debugger agent-card -o json
 ```
 
 ### Task Management
