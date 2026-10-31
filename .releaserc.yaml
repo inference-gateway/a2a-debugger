@@ -59,7 +59,7 @@ plugins:
         - path: dist/a2a_Darwin_arm64.tar.gz
         - path: dist/checksums.txt
       releasedLabels:
-        - released
+        - "<%= nextRelease.channel === 'rc' ? 'rc' : 'released' %>"
       releaseNameTemplate: "🚀 Version ${nextRelease.version}"
       successCommentCondition: "false"
       labels:
