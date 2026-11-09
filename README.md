@@ -607,7 +607,7 @@ Note that `tasks list` strips artifacts and history unless `--include-artifacts`
 
 ### Prerequisites
 
-- Go 1.26.8 or later (the version pinned in `go.mod`)
+- Go 1.27.3 or later (the version pinned in `go.mod`)
 - [Task](https://taskfile.dev/) for build automation
 
 ### Available Tasks
