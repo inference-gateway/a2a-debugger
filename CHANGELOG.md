@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.3](https://github.com/inference-gateway/a2a-debugger/compare/v0.11.2...v0.11.3) (2026-11-09)
+
+### ♻️ Improvements
+
+* bump go toolchain to 1.27.3 ([#163](https://github.com/inference-gateway/a2a-debugger/issues/163)) ([9da69d5](https://github.com/inference-gateway/a2a-debugger/commit/9da69d59043bb29f2f9686ab55382141f9c27f89))
+
+### 👷 CI
+
+* **release:** label issues and PRs shipped in an rc with rc ([#162](https://github.com/inference-gateway/a2a-debugger/issues/162)) ([2468274](https://github.com/inference-gateway/a2a-debugger/commit/24682745fc8d796c00009e1e82813412bc217811))
+
+### 🔧 Miscellaneous
+
+* **deps:** bump claude-code 2.1.289 -> 2.1.296 ([#156](https://github.com/inference-gateway/a2a-debugger/issues/156)) ([06250d8](https://github.com/inference-gateway/a2a-debugger/commit/06250d8ae2254ab517c20a926bb5edc1068cffc6))
+* **deps:** bump claude-code 2.1.296 -> 2.1.308 ([#159](https://github.com/inference-gateway/a2a-debugger/issues/159)) ([aafc422](https://github.com/inference-gateway/a2a-debugger/commit/aafc422025f086aed804373d9fed5693496493d8))
+* **deps:** bump infer CLI v0.226.0 -> v0.231.1 ([#157](https://github.com/inference-gateway/a2a-debugger/issues/157)) ([55db61b](https://github.com/inference-gateway/a2a-debugger/commit/55db61b86507e0e8b5709c415b4c3a6930546dbe))
+
+### 🔨 Miscellaneous
+
+* **deps:** bump docker/login-action ([#160](https://github.com/inference-gateway/a2a-debugger/issues/160)) ([8591a96](https://github.com/inference-gateway/a2a-debugger/commit/8591a9662d029326ec3f543cbad2d249e6c9128a))
+* **deps:** bump github.com/go-jose/go-jose/v4 from 4.1.5 to 4.1.6 ([#161](https://github.com/inference-gateway/a2a-debugger/issues/161)) ([f8564e2](https://github.com/inference-gateway/a2a-debugger/commit/f8564e2fcb4d000e54b4697512aaa83a67c3e647))
+* **deps:** bump the github-actions group with 2 updates ([#158](https://github.com/inference-gateway/a2a-debugger/issues/158)) ([728c8b8](https://github.com/inference-gateway/a2a-debugger/commit/728c8b8b0a1cd8e85087c7eda88ab7331c07d2a0))
+* **deps:** bump the github-actions group with 2 updates ([#164](https://github.com/inference-gateway/a2a-debugger/issues/164)) ([1970b0b](https://github.com/inference-gateway/a2a-debugger/commit/1970b0b580430e9837c4ef68e5fed384f6ea967b))
+
 ## [0.11.2](https://github.com/inference-gateway/a2a-debugger/compare/v0.11.1...v0.11.2) (2026-10-15)
 
 ### ♻️ Improvements
