@@ -12,7 +12,7 @@ Build automation goes through [Task](https://taskfile.dev/), not `make`:
 | `task build:dev` | Plain `go build` — faster iteration |
 | `task test` | `go test ./...` |
 | `task test:coverage` | `go test -cover ./...` |
-| `task lint` | `golangci-lint run` (CI pins v2.12.2) |
+| `task lint` | `golangci-lint run` (CI pins v2.15.0) |
 | `task tidy` | `go mod tidy` for every module — run before pushing; CI fails on a dirty `go.mod` |
 
 Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try the binary end-to-end against a real server via `example/docker-compose.yml` (spins up `mock-agent` + the debugger image on a bridge network — no API keys needed).
@@ -39,7 +39,7 @@ Tests live in `cli/*_test.go` (`cli_test.go`, `auth_test.go`, `cli_output_test.g
 
 - **Conventional commits are load-bearing.** `.releaserc.yaml` drives semantic-release: `feat` → minor; `fix|impr|refactor|perf|ci|docs|style|test|build|security|chore` → patch; breaking → major. Lowercase descriptions (`feat(client): add retry mechanism`). `chore(release):` is reserved for the release bot.
 - **Import order and naming** are enforced by golangci-lint (see `.golangci.yml`): the `gci` formatter groups imports as standard library, `github.com/stretchr/testify`, third-party (`default`), `github.com/inference-gateway/*`, then this module; the `importas` linter requires every non-standard-library import to be named after its last path element (`cobra "github.com/spf13/cobra"`). Fix locally with `golangci-lint fmt` and `golangci-lint run --fix`.
-- **Go version is pinned in `go.mod` (1.26.8)**; CI reads it via `go-version-file`.
+- **Go version is pinned in `go.mod` (1.27.3)**; CI reads it via `go-version-file`.
 - **Config is `~/.a2a.yaml`**, loaded by viper; `viper.AutomaticEnv()` means `SERVER_URL=...` overrides `server-url`.
 - **Security:** never commit local config, credentials, or private server URLs. Use `--insecure` only for local or test servers.
 

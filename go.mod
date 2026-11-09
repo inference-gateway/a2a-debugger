@@ -1,6 +1,6 @@
 module github.com/inference-gateway/a2a-debugger
 
-go 1.26.8
+go 1.27.3
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0
