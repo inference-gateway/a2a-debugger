@@ -15,7 +15,7 @@ Build automation goes through [Task](https://taskfile.dev/), not `make`:
 | `task lint` | `golangci-lint run` (CI pins v2.15.0) |
 | `task tidy` | `go mod tidy` for every module — run before pushing; CI fails on a dirty `go.mod` |
 
-Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try the binary end-to-end against a real server via `example/docker-compose.yml` (spins up `mock-agent` + the debugger image on a bridge network — no API keys needed).
+Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try the binary end-to-end against a real server via `example/docker-compose.yml` (spins up `mock-agent` + the debugger image on a bridge network — no API keys needed). It also ships an opt-in auth profile (`docker compose --profile auth up -d --wait`) — Keycloak plus an OIDC-enforcing `mock-agent` to exercise `a2a auth` / `--token` against.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ Run one test: `go test ./cli -run TestSubmitStreamingTaskCmd_RawMode -v`. Try th
 
 ## Testing
 
-Tests live in `cli/*_test.go` (`cli_test.go`, `auth_test.go`, `cli_output_test.go`, `interactive_multisession_test.go`) and swap the `a2aClient` package-global with a `mockA2AClient` satisfying `client.A2AClient`. Always save and restore the original (`originalClient := a2aClient` … `a2aClient = originalClient`), and capture stdout via the `os.Pipe()` swap of `os.Stdout`.
+Tests live in `cli/*_test.go` (`cli_test.go`, `auth_test.go`, `cli_output_test.go`, `interactive_test.go`, `interactive_multisession_test.go`) and swap the `a2aClient` package-global with a `mockA2AClient` satisfying `client.A2AClient`. Always save and restore the original (`originalClient := a2aClient` … `a2aClient = originalClient`), and capture stdout via the `os.Pipe()` swap of `os.Stdout`. `config_env_test.go` doesn't need the mock — it asserts `SERVER_URL` overrides `server-url` in `initConfig()`.
 
 `cli/e2e_test.go` is the exception: it boots a real `adk/server` on a free port with an echo handler and drives `rootCmd` over the wire, so an ADK change that breaks `connect`, `agent-card` or any `tasks` subcommand fails in `task test` rather than only when someone runs `example/docker-compose.yml`. It is the reason the root `go.mod` carries the ADK server's dependencies (gin, otel, …) as test-only indirects; nothing the shipped binary imports.
 
@@ -57,4 +57,4 @@ Tests live in `cli/*_test.go` (`cli_test.go`, `auth_test.go`, `cli_output_test.g
 
 ## Release
 
-Manual: trigger `.github/workflows/release.yml` (workflow_dispatch). It runs semantic-release against `main` (or `rc/*`) to tag and create the GitHub release; that event fires `artifacts.yml`, where goreleaser builds linux/darwin × amd64/arm/arm64 binaries, pushes multi-arch Docker images to `ghcr.io/inference-gateway/a2a-debugger`, and cosign-signs. `release: disable: true` in `.goreleaser.yaml` is intentional — semantic-release owns the release.
+Manual: trigger `.github/workflows/release.yml` (workflow_dispatch); it runs on `main` (or an `rc/*` branch for prereleases) and does everything in one workflow — a `version` job computes the next version with a semantic-release dry-run, `build` runs goreleaser (linux/darwin × amd64/arm/arm64 binaries plus linux/amd64+arm64 container images pushed to `ghcr.io/inference-gateway/a2a-debugger`), `release` runs the real semantic-release to tag and publish the GitHub release (CHANGELOG + dist tarballs + checksums), and `sign_containers` cosign-signs the pushed image digests. `release: disable: true` in `.goreleaser.yaml` is intentional — semantic-release owns the release (and the changelog, alongside `changelog: disable: true`).
